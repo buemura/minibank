@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option go_package = "github.com/buemura/minibank/packages/pb";
+
+message Account {
+    string id = 1;
+    int32 balance = 2;
+    string owner_name = 3;
+    string owner_document = 4;
+    string status = 5;
+    string created_at = 6;
+    string updated_at = 7;
+}
+
+message GetAccountRequest {
+    string id = 1;
+}
+
+service AccountService {
+    rpc getAccount(GetAccountRequest) returns (Account);
+}

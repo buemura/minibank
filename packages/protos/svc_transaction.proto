@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+option go_package = "github.com/buemura/minibank/packages/pb";
+
+message Transaction {
+    string id = 1;
+    string origin_account = 2;
+    string destination_account = 3;
+    int64 amount = 4;
+    string status = 5;
+    string created_at = 6;
+    string updated_at = 7;
+}
+
+message GetTransactionsRequest {
+    string account_id = 1;
+    int32 page = 2;
+    int32 items = 3;
+}
+
+message GetTransactionsResponse {
+    message Meta {
+        int32 page = 1;
+        int32 items = 2;
+        int32 total_pages = 3;
+        int32 total_items = 4;
+    }
+
+    Meta meta = 1;
+    repeated Transaction data = 2;
+}
+
+service TransactionService {
+    rpc getTransactions(GetTransactionsRequest) returns (GetTransactionsResponse);
+}
