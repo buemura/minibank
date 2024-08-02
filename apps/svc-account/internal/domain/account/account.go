@@ -1,11 +1,10 @@
-package entity
+package account
 
 import (
 	"crypto/rand"
 	"errors"
 	"time"
 
-	"github.com/buemura/minibank/svc-account/internal/core/dto"
 	"github.com/lucsky/cuid"
 )
 
@@ -19,7 +18,7 @@ type Account struct {
 	UpdatedAt     time.Time
 }
 
-func NewAccount(in dto.CreateAccountIn) (*Account, error) {
+func NewAccount(in CreateAccountIn) (*Account, error) {
 	if err := validate(in); err != nil {
 		return nil, err
 	}
@@ -40,7 +39,7 @@ func NewAccount(in dto.CreateAccountIn) (*Account, error) {
 	}, nil
 }
 
-func validate(in dto.CreateAccountIn) error {
+func validate(in CreateAccountIn) error {
 	if in.OwnerName == "" {
 		return errors.New("invalid owner name")
 	}

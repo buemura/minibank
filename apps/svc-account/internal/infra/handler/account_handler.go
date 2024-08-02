@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/buemura/minibank/packages/pb"
-	"github.com/buemura/minibank/svc-account/internal/core/usecase"
+	"github.com/buemura/minibank/svc-account/internal/application/usecase"
 	"github.com/buemura/minibank/svc-account/internal/infra/database"
 )
 

@@ -2,8 +2,9 @@ package database
 
 import (
 	"context"
+	"errors"
 
-	"github.com/buemura/minibank/svc-account/internal/core/entity"
+	"github.com/buemura/minibank/svc-account/internal/domain/account"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -18,7 +19,7 @@ func NewPgxOrderRepository() *PgxOrderRepository {
 	}
 }
 
-func (r *PgxOrderRepository) FindById(id string) (*entity.Account, error) {
+func (r *PgxOrderRepository) FindById(id string) (*account.Account, error) {
 	rows, err := r.db.Query(
 		context.Background(),
 		`SELECT id, balance, owner_name, owner_document, status, created_at, updated_at
@@ -30,8 +31,11 @@ func (r *PgxOrderRepository) FindById(id string) (*entity.Account, error) {
 		return nil, err
 	}
 
-	acc, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByPos[entity.Account])
+	acc, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByPos[account.Account])
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, account.ErrAccountNotFound
+		}
 		return nil, err
 	}
 	return acc, nil

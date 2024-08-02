@@ -1,4 +1,4 @@
-package dto
+package account
 
 type CreateAccountIn struct {
 	OwnerName     string `json:"owner_name"`
