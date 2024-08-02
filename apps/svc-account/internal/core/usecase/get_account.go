@@ -14,7 +14,7 @@ func NewGetAccount(repo repository.AccountRepository) *GetAccount {
 }
 
 func (u *GetAccount) Execute(id string) (*entity.Account, error) {
-	acc, err := u.repo.GetAccountById(id)
+	acc, err := u.repo.FindById(id)
 	if err != nil {
 		return nil, err
 	}
