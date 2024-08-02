@@ -1,0 +1,65 @@
+version: "3.9"
+
+networks:
+  minibank:
+
+services:
+  # rabbitmq:
+  #   image: rabbitmq:3.8-management
+  #   hostname: rabbitmq
+  #   ports:
+  #     - 5672:5672
+  #     - 15672:15672
+  #   environment:
+  #     RABBITMQ_DEFAULT_USER: guest
+  #     RABBITMQ_DEFAULT_PASS: guest
+  #     RABBITMQ_DEFAULT_VHOST: /
+  #   networks:
+  #     - minibank
+
+  db-account:
+    image: postgres:latest
+    hostname: db-account
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=svc_account
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./migrations/svc_account_init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: postgres -c checkpoint_timeout=600 -c max_wal_size=4096
+    networks:
+      - minibank
+
+  # api-gtw:
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/api-gtw/Dockerfile
+  #   hostname: api-gtw
+  #   environment:
+  #     - PORT=8080
+  #     - GRPC_HOST_PRODUCT_SVC=product-svc:50050
+  #     - GRPC_HOST_CUSTOMER_SVC=customer-svc:50051
+  #     - GRPC_HOST_ORDER_SVC=order-svc:50052
+  #   depends_on:
+  #     - product-svc
+  #     - customer-svc
+  #     - order-svc
+  #   ports:
+  #     - "8080:8080"
+  #   networks:
+  #     - minibank
+
+  # svc_account:
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/svc_account/Dockerfile
+  #   hostname: svc_account
+  #   environment:
+  #     - GRPC_PORT=50051
+  #     - DATABASE_URL=postgresql://admin:admin@db-account:5432/svc_account
+  #   depends_on:
+  #     - db-account
+  #   networks:
+  #     - minibank

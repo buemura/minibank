@@ -7,7 +7,6 @@ import (
 )
 
 var (
-	PORT         string
 	GRPC_PORT    string
 	DATABASE_URL string
 )
@@ -17,13 +16,14 @@ func LoadEnv() {
 	err := viper.ReadInConfig()
 
 	if err != nil {
-		PORT = os.Getenv("PORT")
 		GRPC_PORT = os.Getenv("GRPC_PORT")
 		DATABASE_URL = os.Getenv("DATABASE_URL")
-		return
+	} else {
+		GRPC_PORT = viper.GetString("GRPC_PORT")
+		DATABASE_URL = viper.GetString("DATABASE_URL")
 	}
 
-	PORT = viper.GetString("PORT")
-	GRPC_PORT = viper.GetString("GRPC_PORT")
-	DATABASE_URL = viper.GetString("DATABASE_URL")
+	if len(GRPC_PORT) == 0 || len(DATABASE_URL) == 0 {
+		panic("Missing environment variables")
+	}
 }
