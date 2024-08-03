@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/buemura/minibank/packages/pb"
+	"github.com/buemura/minibank/packages/gen/protos"
 	"github.com/buemura/minibank/svc-account/internal/core/domain/account"
 	"github.com/buemura/minibank/svc-account/internal/core/usecase"
 	"github.com/buemura/minibank/svc-account/internal/infra/cache"
@@ -13,13 +13,13 @@ import (
 )
 
 type AccountHandler struct {
-	pb.UnimplementedAccountServiceServer
+	protos.UnimplementedAccountServiceServer
 }
 
 func (c AccountHandler) GetAccount(
 	ctx context.Context,
-	in *pb.GetAccountRequest,
-) (*pb.Account, error) {
+	in *protos.GetAccountRequest,
+) (*protos.Account, error) {
 	slog.Info("[AccountHandler][GetAccount] - Incoming request")
 
 	accountRepo := database.NewPgxOrderRepository()
@@ -32,7 +32,7 @@ func (c AccountHandler) GetAccount(
 		return nil, HandleGrpcError(err)
 	}
 
-	return &pb.Account{
+	return &protos.Account{
 		Id:            acc.ID,
 		Balance:       int32(acc.Balance),
 		OwnerName:     acc.OwnerName,
@@ -46,8 +46,8 @@ func (c AccountHandler) GetAccount(
 
 func (c AccountHandler) CreateAccount(
 	ctx context.Context,
-	in *pb.CreateAccountRequest,
-) (*pb.Account, error) {
+	in *protos.CreateAccountRequest,
+) (*protos.Account, error) {
 	slog.Info("[AccountHandler][CreateAccount] - Incoming request")
 
 	accountRepo := database.NewPgxOrderRepository()
@@ -66,7 +66,7 @@ func (c AccountHandler) CreateAccount(
 		return nil, HandleGrpcError(err)
 	}
 
-	return &pb.Account{
+	return &protos.Account{
 		Id:            acc.ID,
 		Balance:       int32(acc.Balance),
 		OwnerName:     acc.OwnerName,

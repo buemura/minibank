@@ -1,15 +1,16 @@
 syntax = "proto3";
 
-option go_package = "github.com/buemura/minibank/packages/pb";
+option go_package = "github.com/buemura/minibank/packages/gen/protos";
 
 message Transaction {
     string id = 1;
-    string origin_account = 2;
-    string destination_account = 3;
+    string account_id = 2;
+    optional string destination_account_id = 3;
     int64 amount = 4;
     string status = 5;
-    string created_at = 6;
-    string updated_at = 7;
+    string transaction_type = 6;
+    string created_at = 7;
+    string updated_at = 8;
 }
 
 message GetTransactionsRequest {

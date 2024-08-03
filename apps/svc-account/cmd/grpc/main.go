@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/buemura/minibank/packages/pb"
+	"github.com/buemura/minibank/packages/gen/protos"
 	"github.com/buemura/minibank/svc-account/config"
 	"github.com/buemura/minibank/svc-account/internal/infra/cache"
 	"github.com/buemura/minibank/svc-account/internal/infra/database"
@@ -29,7 +29,7 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterAccountServiceServer(s, &handler.AccountHandler{})
+	protos.RegisterAccountServiceServer(s, &handler.AccountHandler{})
 
 	go func() {
 		if err := s.Serve(listener); err != nil {
