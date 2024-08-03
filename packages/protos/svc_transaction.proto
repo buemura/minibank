@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/buemura/minibank/packages/gen/proto";
+option go_package = "github.com/buemura/minibank/packages/gen";
 
 message Transaction {
     string id = 1;
