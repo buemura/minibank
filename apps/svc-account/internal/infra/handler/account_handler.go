@@ -37,7 +37,6 @@ func (c AccountHandler) GetAccount(
 		Balance:       int32(acc.Balance),
 		OwnerName:     acc.OwnerName,
 		OwnerDocument: acc.OwnerDocument,
-		IsExternal:    acc.IsExternal,
 		Status:        acc.Status,
 		CreatedAt:     acc.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:     acc.UpdatedAt.Format(time.RFC3339),
@@ -57,7 +56,6 @@ func (c AccountHandler) CreateAccount(
 	createAccIn := &account.CreateAccountIn{
 		OwnerName:     in.OwnerName,
 		OwnerDocument: in.OwnerDocument,
-		IsExternal:    in.IsExternal,
 	}
 
 	acc, err := createAccountUC.Execute(createAccIn)
@@ -71,7 +69,6 @@ func (c AccountHandler) CreateAccount(
 		Balance:       int32(acc.Balance),
 		OwnerName:     acc.OwnerName,
 		OwnerDocument: acc.OwnerDocument,
-		IsExternal:    acc.IsExternal,
 		Status:        acc.Status,
 		CreatedAt:     acc.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:     acc.UpdatedAt.Format(time.RFC3339),
