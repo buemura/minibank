@@ -13,12 +13,13 @@ type Account struct {
 	Balance       int
 	OwnerName     string
 	OwnerDocument string
+	IsExternal    bool
 	Status        string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
 
-func NewAccount(in CreateAccountIn) (*Account, error) {
+func NewAccount(in *CreateAccountIn) (*Account, error) {
 	if err := validate(in); err != nil {
 		return nil, err
 	}
@@ -33,13 +34,14 @@ func NewAccount(in CreateAccountIn) (*Account, error) {
 		Balance:       0,
 		OwnerName:     in.OwnerName,
 		OwnerDocument: in.OwnerDocument,
+		IsExternal:    in.IsExternal,
 		Status:        "ACTIVE",
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 	}, nil
 }
 
-func validate(in CreateAccountIn) error {
+func validate(in *CreateAccountIn) error {
 	if in.OwnerName == "" {
 		return errors.New("invalid owner name")
 	}

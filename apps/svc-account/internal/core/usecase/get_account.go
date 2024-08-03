@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/buemura/minibank/svc-account/internal/application/gateway"
-	"github.com/buemura/minibank/svc-account/internal/domain/account"
+	"github.com/buemura/minibank/svc-account/internal/core/domain/account"
+	"github.com/buemura/minibank/svc-account/internal/core/gateway"
 )
 
 type GetAccount struct {
