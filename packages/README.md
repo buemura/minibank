@@ -4,9 +4,10 @@
 
 ```bash
 protoc \
---go_out=pb \
+--go_out=gen \
 --go_opt=paths=source_relative \
---go-grpc_out=pb \
+--go-grpc_out=gen \
 --go-grpc_opt=paths=source_relative \
-protos/product_service.proto
+--experimental_allow_proto3_optional \
+protos/svc_account.proto
 ```

@@ -9,17 +9,17 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type PgxOrderRepository struct {
+type PgxAccountRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewPgxOrderRepository() *PgxOrderRepository {
-	return &PgxOrderRepository{
+func NewPgxAccountRepository() *PgxAccountRepository {
+	return &PgxAccountRepository{
 		db: Conn,
 	}
 }
 
-func (r *PgxOrderRepository) FindById(id string) (*account.Account, error) {
+func (r *PgxAccountRepository) FindById(id string) (*account.Account, error) {
 	rows, err := r.db.Query(
 		context.Background(),
 		`SELECT id, balance, owner_name, owner_document, is_external, status, created_at, updated_at
@@ -41,7 +41,7 @@ func (r *PgxOrderRepository) FindById(id string) (*account.Account, error) {
 	return acc, nil
 }
 
-func (r *PgxOrderRepository) FindByOwnerDocument(document string) (*account.Account, error) {
+func (r *PgxAccountRepository) FindByOwnerDocument(document string) (*account.Account, error) {
 	rows, err := r.db.Query(
 		context.Background(),
 		`SELECT id, balance, owner_name, owner_document, is_external, status, created_at, updated_at
@@ -63,7 +63,7 @@ func (r *PgxOrderRepository) FindByOwnerDocument(document string) (*account.Acco
 	return acc, nil
 }
 
-func (r *PgxOrderRepository) Create(acc *account.Account) (*account.Account, error) {
+func (r *PgxAccountRepository) Create(acc *account.Account) (*account.Account, error) {
 	_, err := r.db.Query(
 		context.Background(),
 		`INSERT INTO "accounts" (id, balance, owner_name, owner_document, is_external, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -75,7 +75,7 @@ func (r *PgxOrderRepository) Create(acc *account.Account) (*account.Account, err
 	return acc, nil
 }
 
-func (r *PgxOrderRepository) Update(acc *account.Account) (*account.Account, error) {
+func (r *PgxAccountRepository) Update(acc *account.Account) (*account.Account, error) {
 	_, err := r.db.Query(
 		context.Background(),
 		`UPDATE "accounts" SET balance=$1, owner_name=$2, owner_document=$3, is_external=$4, status=$5, updated_at=$6 WHERE id=$7`,

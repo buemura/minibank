@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/buemura/minibank/svc-account/config"
 	"github.com/buemura/minibank/svc-account/internal/core/domain/account"
 	"github.com/buemura/minibank/svc-account/internal/core/gateway"
 )
@@ -46,7 +47,7 @@ func (u *CreateAccount) Execute(in *account.CreateAccountIn) (*account.Account, 
 	}
 
 	slog.Info(fmt.Sprintf("[CreateAccount][Execute] - Saving account in cache: %s", acc.ID))
-	err = u.cacheRepo.Set(fmt.Sprintf("account:%s", acc.ID), string(accToString), 60*time.Second)
+	err = u.cacheRepo.Set(fmt.Sprintf("%s:%s", config.CACHE_ACCOUNT_KEY_PREFIX, acc.ID), string(accToString), 60*time.Second)
 	if err != nil {
 		return nil, err
 	}

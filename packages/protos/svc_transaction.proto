@@ -27,10 +27,18 @@ message GetTransactionsResponse {
         int32 total_items = 4;
     }
 
-    Meta meta = 1;
-    repeated Transaction data = 2;
+    repeated Transaction data = 1;
+    // Meta meta = 2;
+}
+
+message CreateTransactionRequest {
+    string account_id = 1;
+    optional string destination_account_id = 2;
+    int64 amount = 3;
+    string transaction_type = 4;
 }
 
 service TransactionService {
-    rpc getTransactions(GetTransactionsRequest) returns (GetTransactionsResponse);
+    rpc getTransactions(GetTransactionsRequest) returns (GetTransactionsResponse) {};
+    rpc createTransaction(CreateTransactionRequest) returns (Transaction) {};
 }

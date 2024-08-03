@@ -52,6 +52,21 @@ services:
     networks:
       - minibank
 
+  db-transaction:
+    image: postgres:latest
+    hostname: db-transaction
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=svc_transaction
+    ports:
+      - "15432:5432"
+    volumes:
+      - ./configs/svc_transaction_init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: postgres -c checkpoint_timeout=600 -c max_wal_size=4096
+    networks:
+      - minibank
+
   # api-gtw:
   #   build:
   #     context: .

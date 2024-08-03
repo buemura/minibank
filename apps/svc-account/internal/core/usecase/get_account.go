@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/buemura/minibank/svc-account/config"
 	"github.com/buemura/minibank/svc-account/internal/core/domain/account"
 	"github.com/buemura/minibank/svc-account/internal/core/gateway"
 )
@@ -21,7 +22,7 @@ func NewGetAccount(cacheRepo gateway.CacheRepository, accRepo account.AccountRep
 
 func (u *GetAccount) Execute(id string) (*account.Account, error) {
 	slog.Info(fmt.Sprintf("[GetAccount][Execute] - Getting account from cache: %s", id))
-	accCache, err := u.cacheRepo.Get(fmt.Sprintf("account:%s", id))
+	accCache, err := u.cacheRepo.Get(fmt.Sprintf("%s:%s", config.CACHE_ACCOUNT_KEY_PREFIX, id))
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +43,7 @@ func (u *GetAccount) Execute(id string) (*account.Account, error) {
 	}
 
 	slog.Info(fmt.Sprintf("[GetAccount][Execute] - Saving account in cache: %s", id))
-	err = u.cacheRepo.Set(fmt.Sprintf("account:%s", id), string(accToString), 60*time.Second)
+	err = u.cacheRepo.Set(fmt.Sprintf("%s:%s", config.CACHE_ACCOUNT_KEY_PREFIX, id), string(accToString), 60*time.Second)
 	if err != nil {
 		return nil, err
 	}

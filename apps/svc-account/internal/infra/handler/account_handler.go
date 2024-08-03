@@ -22,7 +22,7 @@ func (c AccountHandler) GetAccount(
 ) (*protos.Account, error) {
 	slog.Info("[AccountHandler][GetAccount] - Incoming request")
 
-	accountRepo := database.NewPgxOrderRepository()
+	accountRepo := database.NewPgxAccountRepository()
 	cacheRepo := cache.NewRedisCacheRepository()
 	getAccountUC := usecase.NewGetAccount(cacheRepo, accountRepo)
 
@@ -50,7 +50,7 @@ func (c AccountHandler) CreateAccount(
 ) (*protos.Account, error) {
 	slog.Info("[AccountHandler][CreateAccount] - Incoming request")
 
-	accountRepo := database.NewPgxOrderRepository()
+	accountRepo := database.NewPgxAccountRepository()
 	cacheRepo := cache.NewRedisCacheRepository()
 	createAccountUC := usecase.NewCreateAccount(cacheRepo, accountRepo)
 
