@@ -20,6 +20,9 @@ func NewRedisCacheRepository() *RedisCacheRepository {
 func (r *RedisCacheRepository) Get(key string) (string, error) {
 	value, err := r.rdb.Get(context.Background(), key).Result()
 	if err != nil {
+		if err == redis.Nil {
+			return "", nil
+		}
 		return "", err
 	}
 	return value, nil
