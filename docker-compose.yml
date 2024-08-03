@@ -3,6 +3,12 @@ version: "3.9"
 networks:
   minibank:
 
+volumes:
+  cache:
+    driver: local
+  redisinsight:
+    driver: local
+
 services:
   # rabbitmq:
   #   image: rabbitmq:3.8-management
@@ -16,6 +22,20 @@ services:
   #     RABBITMQ_DEFAULT_VHOST: /
   #   networks:
   #     - minibank
+
+  redis:
+    image: redis:alpine
+    ports:
+      - 6379:6379
+    volumes:
+      - cache:/data
+
+  redis-client:
+    image: redislabs/redisinsight:latest
+    ports:
+      - 8001:8001
+    volumes:
+      - redisinsight:/db
 
   db-account:
     image: postgres:latest
