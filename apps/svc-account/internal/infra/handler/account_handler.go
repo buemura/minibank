@@ -2,12 +2,13 @@ package handler
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/buemura/minibank/packages/pb"
 	"github.com/buemura/minibank/svc-account/internal/application/usecase"
+	"github.com/buemura/minibank/svc-account/internal/infra/cache"
 	"github.com/buemura/minibank/svc-account/internal/infra/database"
+	"golang.org/x/exp/slog"
 )
 
 type AccountHandler struct {
@@ -18,14 +19,15 @@ func (c AccountHandler) GetAccount(
 	ctx context.Context,
 	in *pb.GetAccountRequest,
 ) (*pb.Account, error) {
-	log.Println("[AccountHandler][GetAccount] - Incoming request")
+	slog.Info("[AccountHandler][GetAccount] - Incoming request")
 
 	accountRepo := database.NewPgxOrderRepository()
-	getAccountUC := usecase.NewGetAccount(accountRepo)
+	cacheRepo := cache.NewRedisCacheRepository()
+	getAccountUC := usecase.NewGetAccount(cacheRepo, accountRepo)
 
 	acc, err := getAccountUC.Execute(in.Id)
 	if err != nil {
-		log.Println("[AccountHandler][GetAccount] - Error:", err.Error())
+		slog.Error("[AccountHandler][GetAccount] - Error:", err.Error())
 		return nil, HandleGrpcError(err)
 	}
 
