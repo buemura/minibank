@@ -4,12 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/buemura/minibank/packages/cache"
 	"github.com/buemura/minibank/packages/gen/protos"
-	"github.com/buemura/minibank/svc-account/config"
 	"github.com/buemura/minibank/svc-account/internal/core/domain/account"
-	"github.com/buemura/minibank/svc-account/internal/core/usecase"
-	"github.com/buemura/minibank/svc-account/internal/infra/database"
+	"github.com/buemura/minibank/svc-account/internal/infra/factory"
 	"golang.org/x/exp/slog"
 )
 
@@ -23,9 +20,7 @@ func (c AccountHandler) GetAccount(
 ) (*protos.Account, error) {
 	slog.Info("[AccountHandler][GetAccount] - Incoming request")
 
-	accountRepo := database.NewPgxAccountRepository()
-	cacheRepo := cache.NewRedisCacheRepository(config.REDIS_URL, config.REDIS_PASSWORD)
-	getAccountUC := usecase.NewGetAccount(cacheRepo, accountRepo)
+	getAccountUC := factory.MakeGetAccountUsecase()
 
 	acc, err := getAccountUC.Execute(in.Id)
 	if err != nil {
@@ -50,9 +45,7 @@ func (c AccountHandler) CreateAccount(
 ) (*protos.Account, error) {
 	slog.Info("[AccountHandler][CreateAccount] - Incoming request")
 
-	accountRepo := database.NewPgxAccountRepository()
-	cacheRepo := cache.NewRedisCacheRepository(config.REDIS_URL, config.REDIS_PASSWORD)
-	createAccountUC := usecase.NewCreateAccount(cacheRepo, accountRepo)
+	createAccountUC := factory.MakeCreateAccountUsecase()
 
 	createAccIn := &account.CreateAccountIn{
 		OwnerName:     in.OwnerName,
