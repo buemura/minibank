@@ -21,7 +21,13 @@ message CreateAccountRequest {
     string owner_document = 2;
 }
 
+message UpdateBalanceRequest {
+    string id = 1;
+    int32 new_balance = 2;
+}
+
 service AccountService {
-    rpc getAccount(GetAccountRequest) returns (Account);
-    rpc createAccount(CreateAccountRequest) returns (Account);
+    rpc getAccount(GetAccountRequest) returns (Account) {};
+    rpc createAccount(CreateAccountRequest) returns (Account) {};
+    rpc updateBalance(UpdateBalanceRequest) returns (Account) {};
 }

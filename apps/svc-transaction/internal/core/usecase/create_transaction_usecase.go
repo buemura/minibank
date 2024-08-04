@@ -30,7 +30,7 @@ func (u *CreateTransaction) Execute(in *transaction.CreateTransactionIn) (*trans
 		return nil, err
 	}
 
-	slog.Info(fmt.Sprintf("[CreateTransaction][Execute] - Clearing transaction list cache for accountID: %s", trx.ID))
+	slog.Info(fmt.Sprintf("[CreateTransaction][Execute] - Clearing transaction list cache for accountID: %s", trx.AccountID))
 	err = u.cacheRepo.Delete(fmt.Sprintf("%s:%s", config.CACHE_TRANSACTION_LIST_KEY_PREFIX, trx.AccountID))
 	if err != nil {
 		return nil, err

@@ -24,6 +24,6 @@ func QueueConsumer() {
 	go queue.Consume(ch, msgs, queue.TRANSFER_REQUESTED_QUEUE)
 
 	for msg := range msgs {
-		TransactionEventHandler(msg)
+		TransactionEventHandler(ch, msg)
 	}
 }

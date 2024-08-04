@@ -48,7 +48,7 @@ func (r *PgxTransactionRepository) FindByAccountId(in *transaction.GetTransactio
 		context.Background(),
 		`SELECT id, account_id, destination_account_id, amount, status, transaction_type, created_at, updated_at
 		FROM "transactions"
-		WHERE account_id = $1 
+		WHERE account_id = $1 OR destination_account_id = $1
 		LIMIT $2 OFFSET $3`,
 		in.AccountID, limit, offset,
 	)
@@ -93,7 +93,7 @@ func (r *PgxTransactionRepository) Create(trx *transaction.Transaction) (*transa
 func (r *PgxTransactionRepository) Update(trx *transaction.Transaction) (*transaction.Transaction, error) {
 	_, err := r.db.Query(
 		context.Background(),
-		`UPDATE "transactions" SET status=$1, updated_at=$2 WHERE id=$7`,
+		`UPDATE "transactions" SET status=$1, updated_at=$2 WHERE id=$3`,
 		trx.Status, trx.UpdatedAt, trx.ID,
 	)
 	if err != nil {

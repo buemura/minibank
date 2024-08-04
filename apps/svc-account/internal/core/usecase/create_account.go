@@ -1,10 +1,8 @@
 package usecase
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/buemura/minibank/svc-account/config"
 	"github.com/buemura/minibank/svc-account/internal/core/domain/account"
@@ -35,19 +33,14 @@ func (u *CreateAccount) Execute(in *account.CreateAccountIn) (*account.Account, 
 		return nil, err
 	}
 
-	slog.Info(fmt.Sprintf("[CreateAccount][Execute] - Saving account in db: %s", acc.ID))
+	slog.Info(fmt.Sprintf("[CreateAccount][Execute] - Saving account in DB: %s", acc.ID))
 	_, err = u.accRepo.Create(acc)
 	if err != nil {
 		return nil, err
 	}
 
-	accToString, err := json.Marshal(acc)
-	if err != nil {
-		return nil, err
-	}
-
-	slog.Info(fmt.Sprintf("[CreateAccount][Execute] - Saving account in cache: %s", acc.ID))
-	err = u.cacheRepo.Set(fmt.Sprintf("%s:%s", config.CACHE_ACCOUNT_KEY_PREFIX, acc.ID), string(accToString), 60*time.Second)
+	slog.Info(fmt.Sprintf("[CreateAccount][Execute] - Clearing account from cache: %s", acc.ID))
+	err = u.cacheRepo.Delete(fmt.Sprintf("%s:%s", config.CACHE_ACCOUNT_KEY_PREFIX, acc.ID))
 	if err != nil {
 		return nil, err
 	}
