@@ -1,14 +1,8 @@
 package event
 
 import (
-	"encoding/json"
-	"fmt"
-	"log"
-	"log/slog"
-
 	"github.com/buemura/minibank/packages/queue"
 	"github.com/buemura/minibank/svc-transaction/config"
-	"github.com/buemura/minibank/svc-transaction/internal/core/domain/transaction"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -30,25 +24,6 @@ func QueueConsumer() {
 	go queue.Consume(ch, msgs, queue.TRANSFER_REQUESTED_QUEUE)
 
 	for msg := range msgs {
-		switch msg.RoutingKey {
-		case queue.TRANSFER_REQUESTED_QUEUE:
-			var in *transaction.Transaction
-			err := json.Unmarshal([]byte(msg.Body), &in)
-			if err != nil {
-				log.Fatalf(err.Error())
-			}
-
-			slog.Info(fmt.Sprintf("event input: %v", in))
-
-			// notificationEvent := event.NewNotificationEvent()
-			// _, err = notificationEvent.SendNotification(in)
-			// if err != nil {
-			// 	log.Println(err)
-			// 	err = queue.PublishToQueue(ch, string(msg.Body), event.NOTIFY_ENDPOINT_DOWN_DLQ)
-			// 	if err != nil {
-			// 		log.Fatalf("Failed to send message to DLQ queue: %s", err)
-			// 	}
-			// }
-		}
+		TransactionEventHandler(msg)
 	}
 }
