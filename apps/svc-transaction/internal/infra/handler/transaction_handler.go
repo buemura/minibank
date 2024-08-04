@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/buemura/minibank/packages/cache"
 	"github.com/buemura/minibank/packages/gen/protos"
+	"github.com/buemura/minibank/svc-transaction/config"
 	"github.com/buemura/minibank/svc-transaction/internal/core/domain/transaction"
 	"github.com/buemura/minibank/svc-transaction/internal/core/usecase"
-	"github.com/buemura/minibank/svc-transaction/internal/infra/cache"
 	"github.com/buemura/minibank/svc-transaction/internal/infra/database"
 	"golang.org/x/exp/slog"
 )
@@ -23,7 +24,7 @@ func (c TransactionHandler) GetTransactions(
 	slog.Info("[TransactionHandler][GetTransactions] - Incoming request")
 
 	trxRepo := database.NewPgxTransactionRepository()
-	cacheRepo := cache.NewRedisCacheRepository()
+	cacheRepo := cache.NewRedisCacheRepository(config.REDIS_URL, config.REDIS_PASSWORD)
 	getTrxListUC := usecase.NewGetTransactionList(cacheRepo, trxRepo)
 
 	input := &transaction.GetTransactionListIn{
@@ -70,7 +71,7 @@ func (c TransactionHandler) CreateTransaction(
 	slog.Info("[TransactionHandler][CreateTransaction] - Incoming request")
 
 	trxRepo := database.NewPgxTransactionRepository()
-	cacheRepo := cache.NewRedisCacheRepository()
+	cacheRepo := cache.NewRedisCacheRepository(config.REDIS_URL, config.REDIS_PASSWORD)
 	createTransactionUC := usecase.NewCreateTransaction(cacheRepo, trxRepo)
 
 	createAccIn := &transaction.CreateTransactionIn{

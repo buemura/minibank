@@ -9,7 +9,6 @@ import (
 
 	"github.com/buemura/minibank/packages/gen/protos"
 	"github.com/buemura/minibank/svc-account/config"
-	"github.com/buemura/minibank/svc-account/internal/infra/cache"
 	"github.com/buemura/minibank/svc-account/internal/infra/database"
 	"github.com/buemura/minibank/svc-account/internal/infra/handler"
 	"google.golang.org/grpc"
@@ -17,7 +16,6 @@ import (
 
 func init() {
 	config.LoadEnv()
-	cache.Connect()
 	database.Connect()
 }
 

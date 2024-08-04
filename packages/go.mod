@@ -3,6 +3,7 @@ module github.com/buemura/minibank/packages
 go 1.22.2
 
 require (
+	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/redis/go-redis/v9 v9.6.1
 	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.34.2

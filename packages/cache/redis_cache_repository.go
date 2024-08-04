@@ -11,15 +11,24 @@ type RedisCacheRepository struct {
 	rdb *redis.Client
 }
 
-func NewRedisCacheRepository(rdb *redis.Client) *RedisCacheRepository {
+func NewRedisCacheRepository(url, password string) *RedisCacheRepository {
+	client := redis.NewClient(&redis.Options{
+		Addr:     url,
+		Password: password,
+		DB:       0, // use default DB
+	})
+
 	return &RedisCacheRepository{
-		rdb: rdb,
+		rdb: client,
 	}
 }
 
 func (r *RedisCacheRepository) Get(key string) (string, error) {
 	value, err := r.rdb.Get(context.Background(), key).Result()
 	if err != nil {
+		if err == redis.Nil {
+			return "", nil
+		}
 		return "", err
 	}
 	return value, nil
