@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -11,6 +12,25 @@ func failOnError(err error, msg string) {
 	if err != nil {
 		log.Panicf("%s: %s", msg, err)
 	}
+}
+
+func Connect(url string) (*amqp.Connection, *amqp.Channel) {
+	conn, err := amqp.Dial(url)
+	failOnError(err, "Failed to connect to RabbitMQ")
+
+	ch, err := conn.Channel()
+	failOnError(err, "Failed to open a channel")
+
+	return conn, ch
+}
+
+func CreateChannel(url string) *amqp.Channel {
+	conn, err := amqp.Dial(url)
+	failOnError(err, "Failed to connect to RabbitMQ")
+
+	ch, err := conn.Channel()
+	failOnError(err, "Failed to open a channel")
+	return ch
 }
 
 func DeclareQueue(ch *amqp.Channel, queue string) {
@@ -65,17 +85,21 @@ func Publish(ch *amqp.Channel, body string, exName string) error {
 	return nil
 }
 
-func PublishToQueue(ch *amqp.Channel, body string, queue string) error {
-	log.Printf("Sending messagem to queue: %s", queue)
+func PublishToQueue(ch *amqp.Channel, body interface{}, queue string) error {
+	b, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
 
-	err := ch.Publish(
+	log.Printf("[PublishToQueue] - Sending messagem to queue: %s", queue)
+	err = ch.Publish(
 		"",
 		queue,
 		false,
 		false,
 		amqp.Publishing{
 			ContentType: "text/plain",
-			Body:        []byte(body),
+			Body:        b,
 		},
 	)
 	if err != nil {

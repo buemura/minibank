@@ -4,12 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/buemura/minibank/packages/cache"
 	"github.com/buemura/minibank/packages/gen/protos"
+	"github.com/buemura/minibank/packages/queue"
 	"github.com/buemura/minibank/svc-transaction/config"
 	"github.com/buemura/minibank/svc-transaction/internal/core/domain/transaction"
-	"github.com/buemura/minibank/svc-transaction/internal/core/usecase"
-	"github.com/buemura/minibank/svc-transaction/internal/infra/database"
+	"github.com/buemura/minibank/svc-transaction/internal/infra/factory"
 	"golang.org/x/exp/slog"
 )
 
@@ -23,9 +22,7 @@ func (c TransactionHandler) GetTransactions(
 ) (*protos.GetTransactionsResponse, error) {
 	slog.Info("[TransactionHandler][GetTransactions] - Incoming request")
 
-	trxRepo := database.NewPgxTransactionRepository()
-	cacheRepo := cache.NewRedisCacheRepository(config.REDIS_URL, config.REDIS_PASSWORD)
-	getTrxListUC := usecase.NewGetTransactionList(cacheRepo, trxRepo)
+	getTrxListUC := factory.MakeGetTransactionListUsecase()
 
 	input := &transaction.GetTransactionListIn{
 		AccountID: in.AccountId,
@@ -70,9 +67,7 @@ func (c TransactionHandler) CreateTransaction(
 ) (*protos.Transaction, error) {
 	slog.Info("[TransactionHandler][CreateTransaction] - Incoming request")
 
-	trxRepo := database.NewPgxTransactionRepository()
-	cacheRepo := cache.NewRedisCacheRepository(config.REDIS_URL, config.REDIS_PASSWORD)
-	createTransactionUC := usecase.NewCreateTransaction(cacheRepo, trxRepo)
+	createTransactionUC := factory.MakeCreateTransactionUsecase()
 
 	createAccIn := &transaction.CreateTransactionIn{
 		AccountID:            in.AccountId,
@@ -81,7 +76,16 @@ func (c TransactionHandler) CreateTransaction(
 		TransactionType:      transaction.TransactionType(in.TransactionType),
 	}
 
+	// Create a new transaction
 	trx, err := createTransactionUC.Execute(createAccIn)
+	if err != nil {
+		slog.Error("[TransactionHandler][CreateAccount] - Error:", err.Error())
+		return nil, HandleGrpcError(err)
+	}
+
+	// Send message to Queue
+	ch := queue.CreateChannel(config.BROKER_URL)
+	err = queue.PublishToQueue(ch, trx, queue.TRANSACTION_CREATED_QUEUE)
 	if err != nil {
 		slog.Error("[TransactionHandler][CreateAccount] - Error:", err.Error())
 		return nil, HandleGrpcError(err)
