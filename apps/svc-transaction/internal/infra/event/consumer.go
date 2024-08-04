@@ -12,12 +12,6 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func failOnError(err error, msg string) {
-	if err != nil {
-		log.Panicf("%s: %s", msg, err)
-	}
-}
-
 /**
  * @title: QueueConsumer
  * @description: This function is responsible for consuming messages from the RabbitMQ queue. It establishes a connection to the broker, declares the necessary queues, and starts consuming messages from the specified queue.
@@ -29,15 +23,15 @@ func QueueConsumer() {
 	defer conn.Close()
 	defer ch.Close()
 
-	queue.DeclareQueue(ch, queue.TRANSACTION_CREATED_QUEUE)
-	queue.DeclareQueue(ch, queue.TRANSACTION_CREATED_DLQ)
+	queue.DeclareQueue(ch, queue.TRANSFER_REQUESTED_QUEUE)
+	queue.DeclareQueue(ch, queue.TRANSFER_REQUESTED_DLQ)
 
 	msgs := make(chan amqp.Delivery)
-	go queue.Consume(ch, msgs, queue.TRANSACTION_CREATED_QUEUE)
+	go queue.Consume(ch, msgs, queue.TRANSFER_REQUESTED_QUEUE)
 
 	for msg := range msgs {
 		switch msg.RoutingKey {
-		case queue.TRANSACTION_CREATED_QUEUE:
+		case queue.TRANSFER_REQUESTED_QUEUE:
 			var in *transaction.Transaction
 			err := json.Unmarshal([]byte(msg.Body), &in)
 			if err != nil {

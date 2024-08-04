@@ -83,12 +83,14 @@ func (c TransactionHandler) CreateTransaction(
 		return nil, HandleGrpcError(err)
 	}
 
-	// Send message to Queue
-	ch := queue.CreateChannel(config.BROKER_URL)
-	err = queue.PublishToQueue(ch, trx, queue.TRANSACTION_CREATED_QUEUE)
-	if err != nil {
-		slog.Error("[TransactionHandler][CreateAccount] - Error:", err.Error())
-		return nil, HandleGrpcError(err)
+	// Send message to Queue if transaction type is transfer
+	if in.TransactionType == string(transaction.Transfer) {
+		ch := queue.CreateChannel(config.BROKER_URL)
+		err = queue.PublishToQueue(ch, trx, queue.TRANSFER_REQUESTED_QUEUE)
+		if err != nil {
+			slog.Error("[TransactionHandler][CreateAccount] - Error:", err.Error())
+			return nil, HandleGrpcError(err)
+		}
 	}
 
 	return &protos.Transaction{

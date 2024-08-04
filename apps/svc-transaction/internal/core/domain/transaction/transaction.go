@@ -18,9 +18,9 @@ const (
 )
 
 const (
-	Transfer   TransactionType = "Transfer"
-	Deposit    TransactionType = "Deposit"
-	Withdrawal TransactionType = "Withdrawal"
+	Transfer   TransactionType = "TRANSFER"
+	Deposit    TransactionType = "DEPOSIT"
+	Withdrawal TransactionType = "WITHDRAWAL"
 )
 
 type Transaction struct {

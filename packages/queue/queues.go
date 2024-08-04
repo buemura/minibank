@@ -1,6 +1,6 @@
 package queue
 
 const (
-	TRANSACTION_CREATED_QUEUE = "transaction.created"
-	TRANSACTION_CREATED_DLQ   = "transaction.created.dlq"
+	TRANSFER_REQUESTED_QUEUE = "transfer.requested"
+	TRANSFER_REQUESTED_DLQ   = "transfer.requested.dlq"
 )
