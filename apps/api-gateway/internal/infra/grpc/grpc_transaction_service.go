@@ -72,7 +72,7 @@ func (*GrpcTransactionService) CreateTransaction(in *transaction.CreateTransacti
 	defer conn.Close()
 
 	client := protos.NewTransactionServiceClient(conn)
-	log.Println("[GrpcClient][CreateTransaction] - Request Get Transactions for account:", in.AccountID)
+	log.Println("[GrpcClient][CreateTransaction] - Request Create Transactions for account:", in.AccountID)
 
 	request := &protos.CreateTransactionRequest{
 		AccountId:            in.AccountID,
