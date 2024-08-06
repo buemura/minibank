@@ -1,6 +1,6 @@
 package transaction
 
-import "github.com/buemura/minibank-api-gateway/internal/core/domain/common"
+import "github.com/buemura/minibank/api-gateway/internal/core/domain/common"
 
 type GetTransactionListIn struct {
 	AccountID string `json:"account_id"`

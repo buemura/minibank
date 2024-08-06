@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/buemura/minibank-api-gateway/config"
-	"github.com/buemura/minibank-api-gateway/internal/core/domain/account"
+	"github.com/buemura/minibank/api-gateway/config"
+	"github.com/buemura/minibank/api-gateway/internal/core/domain/account"
 	"github.com/buemura/minibank/packages/gen/protos"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

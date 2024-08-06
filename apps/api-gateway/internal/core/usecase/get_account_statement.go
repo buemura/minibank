@@ -1,9 +1,9 @@
 package usecase
 
 import (
-	"github.com/buemura/minibank-api-gateway/internal/core/domain/statement"
-	"github.com/buemura/minibank-api-gateway/internal/core/domain/transaction"
-	"github.com/buemura/minibank-api-gateway/internal/core/gateway"
+	"github.com/buemura/minibank/api-gateway/internal/core/domain/statement"
+	"github.com/buemura/minibank/api-gateway/internal/core/domain/transaction"
+	"github.com/buemura/minibank/api-gateway/internal/core/gateway"
 )
 
 type GetAccountStatement struct {

@@ -1,8 +1,8 @@
 package statement
 
 import (
-	"github.com/buemura/minibank-api-gateway/internal/core/domain/account"
-	"github.com/buemura/minibank-api-gateway/internal/core/domain/transaction"
+	"github.com/buemura/minibank/api-gateway/internal/core/domain/account"
+	"github.com/buemura/minibank/api-gateway/internal/core/domain/transaction"
 )
 
 type GetStatementIn struct {
