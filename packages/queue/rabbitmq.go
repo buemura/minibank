@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -33,7 +34,7 @@ func CreateChannel(url string) *amqp.Channel {
 	return ch
 }
 
-func DeclareQueue(ch *amqp.Channel, queue string) {
+func DeclareQueue(ch *amqp.Channel, queue string) error {
 	_, err := ch.QueueDeclare(
 		queue, // name
 		false, // durable
@@ -42,13 +43,18 @@ func DeclareQueue(ch *amqp.Channel, queue string) {
 		false, // no-wait
 		nil,   // arguments
 	)
-	failOnError(err, "Failed to declare a queue")
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func Consume(ch *amqp.Channel, out chan<- amqp.Delivery, queue string) error {
+	consumerTag := fmt.Sprintf("go-consumer-%s-%d", queue, time.Now().UnixNano())
+
 	msgs, err := ch.Consume(
 		queue,
-		"go-consumer",
+		consumerTag,
 		true,
 		false,
 		false,

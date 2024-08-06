@@ -22,7 +22,7 @@ func init() {
 
 func main() {
 	// Start queue consumer in a separate goroutine to handle incoming events.
-	go event.QueueConsumer()
+	go event.StartConsumer()
 
 	port := ":" + config.GRPC_PORT
 	listener, err := net.Listen("tcp", port)

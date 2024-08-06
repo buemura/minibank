@@ -65,6 +65,10 @@ func (u *PerformTransfer) Execute(trx *transaction.Transaction) error {
 	}
 	_, err = u.accService.UpdateBalance(destinationAccount.ID, destinationAccount.Balance+trx.Amount)
 	if err != nil {
+		err = u.updateTransactionFailed(trx)
+		if err != nil {
+			return err
+		}
 		return err
 	}
 
@@ -82,15 +86,6 @@ func (u *PerformTransfer) Execute(trx *transaction.Transaction) error {
 		return err
 	}
 
-	return nil
-}
-
-func (u *PerformTransfer) updateTransaction(trx *transaction.Transaction) error {
-	trx.UpdatedAt = time.Now()
-	_, err := u.txRepo.Update(trx)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
