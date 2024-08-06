@@ -20,7 +20,7 @@ func NewGrpcTransactionService() *GrpcTransactionService {
 }
 
 func (*GrpcTransactionService) GetTransactions(in *transaction.GetTransactionListIn) (*transaction.PaginatedTransactionList, error) {
-	conn, err := grpc.Dial(config.GRPC_HOST_SVC_ACCOUNT, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.GRPC_HOST_SVC_TRANSACTION, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Failed to dial svc-transaction server: %v", err)
 	}
@@ -65,7 +65,7 @@ func (*GrpcTransactionService) GetTransactions(in *transaction.GetTransactionLis
 }
 
 func (*GrpcTransactionService) CreateTransaction(in *transaction.CreateTransactionIn) (*transaction.Transaction, error) {
-	conn, err := grpc.Dial(config.GRPC_HOST_SVC_ACCOUNT, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.GRPC_HOST_SVC_TRANSACTION, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Failed to dial svc-transaction server: %v", err)
 	}
