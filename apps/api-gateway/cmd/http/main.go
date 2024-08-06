@@ -23,7 +23,7 @@ func main() {
 	server := echo.New()
 	server.Use(middleware.CORS())
 
-	handler.SetupStatementRoutes(server)
+	handler.SetupRoutes(server)
 
 	port := ":" + config.PORT
 
