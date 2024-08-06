@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/buemura/minibank/api-gateway/config"
+	"github.com/buemura/minibank/api-gateway/internal/infra/handler"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -22,7 +23,7 @@ func main() {
 	server := echo.New()
 	server.Use(middleware.CORS())
 
-	router.SetupRouters(server)
+	handler.SetupStatementRoutes(server)
 
 	port := ":" + config.PORT
 

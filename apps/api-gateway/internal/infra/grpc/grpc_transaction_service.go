@@ -64,7 +64,7 @@ func (*GrpcTransactionService) GetTransactions(in *transaction.GetTransactionLis
 	}, nil
 }
 
-func (*GrpcTransactionService) CreateTransaction(in *transaction.GetTransactionListIn) (*transaction.PaginatedTransactionList, error) {
+func (*GrpcTransactionService) CreateTransaction(in *transaction.CreateTransactionIn) (*transaction.Transaction, error) {
 	conn, err := grpc.Dial(config.GRPC_HOST_SVC_ACCOUNT, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Failed to dial svc-transaction server: %v", err)
@@ -72,39 +72,30 @@ func (*GrpcTransactionService) CreateTransaction(in *transaction.GetTransactionL
 	defer conn.Close()
 
 	client := protos.NewTransactionServiceClient(conn)
-	log.Println("[GrpcClient][GetTransactions] - Request Get Transactions for account:", in.AccountID)
+	log.Println("[GrpcClient][CreateTransaction] - Request Get Transactions for account:", in.AccountID)
 
-	request := &protos.GetTransactionsRequest{AccountId: in.AccountID, Page: int32(in.Page), Items: int32(in.Items)}
-	res, err := client.GetTransactions(context.Background(), request)
+	request := &protos.CreateTransactionRequest{
+		AccountId:            in.AccountID,
+		Amount:               int64(in.Amount),
+		DestinationAccountId: in.DestinationAccountID,
+		TransactionType:      string(in.TransactionType),
+	}
+	res, err := client.CreateTransaction(context.Background(), request)
 	if err != nil {
-		log.Println("[GrpcClient][GetTransactions] - Error:", err)
+		log.Println("[GrpcClient][CreateTransaction] - Error:", err)
 		return nil, err
 	}
 
-	var data []*transaction.Transaction
-	for _, d := range res.Data {
-		createdAt, _ := time.Parse("2006-01-02T15:04:05.000Z", d.CreatedAt)
-		updatedAt, _ := time.Parse("2006-01-02T15:04:05.000Z", d.UpdatedAt)
+	createdAt, _ := time.Parse("2006-01-02T15:04:05.000Z", res.CreatedAt)
+	updatedAt, _ := time.Parse("2006-01-02T15:04:05.000Z", res.UpdatedAt)
 
-		data = append(data, &transaction.Transaction{
-			ID:                   d.Id,
-			AccountID:            d.AccountId,
-			DestinationAccountID: d.DestinationAccountId,
-			Amount:               int(d.Amount),
-			Status:               transaction.TransactionStatus(d.Status),
-			TransactionType:      transaction.TransactionType(d.TransactionType),
-			CreatedAt:            createdAt,
-			UpdatedAt:            updatedAt,
-		})
-	}
-
-	return &transaction.PaginatedTransactionList{
-		Data: data,
-		Meta: common.PaginationMetaOut{
-			Page:       int(res.Meta.Page),
-			Items:      int(res.Meta.Items),
-			TotalPages: int(res.Meta.TotalPages),
-			TotalItems: int(res.Meta.TotalItems),
-		},
+	return &transaction.Transaction{
+		ID:              res.Id,
+		AccountID:       res.AccountId,
+		Amount:          int(res.Amount),
+		Status:          transaction.TransactionStatus(res.Status),
+		TransactionType: transaction.TransactionType(res.TransactionType),
+		CreatedAt:       createdAt,
+		UpdatedAt:       updatedAt,
 	}, nil
 }
