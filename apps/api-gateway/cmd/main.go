@@ -11,17 +11,29 @@ import (
 
 	"github.com/buemura/minibank/api-gateway/config"
 	"github.com/buemura/minibank/api-gateway/internal/infra/handler"
+	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var (
+	requestsTotal = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "http_requests_total",
+		Help: "Total number of HTTP requests",
+	})
 )
 
 func init() {
 	config.LoadEnv()
+	prometheus.MustRegister(requestsTotal)
 }
 
 func main() {
 	server := echo.New()
 	server.Use(middleware.CORS())
+	server.Use(echoprometheus.NewMiddleware("myapp"))
+	server.GET("/metrics", echoprometheus.NewHandler())
 
 	handler.SetupRoutes(server)
 

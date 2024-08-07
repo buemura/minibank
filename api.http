@@ -30,7 +30,7 @@ POST http://localhost:8080/account/clzc1pqd0000008mnfmkq9r50/transaction HTTP/1.
 content-type: application/json
 
 {
-    "account_id": "clzc1pqd0000008mnfmkq9r50",
-    "Amount": 2000,
+    "account_id": "cjd7n3v6g0001gq9g7j2m3pbk",
+    "Amount": 1000,
     "transaction_type": "WITHDRAWAL"
 }

@@ -1,0 +1,19 @@
+---
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+alerting:
+
+rule_files:
+
+scrape_configs:
+  - job_name: apigateway
+    static_configs:
+      - targets: ["apigateway:8080"]
+  - job_name: svcaccount
+    static_configs:
+      - targets: ["svcaccount:8081"]
+  - job_name: svctransaction
+    static_configs:
+      - targets: ["svctransaction:8082"]

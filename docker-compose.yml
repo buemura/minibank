@@ -8,8 +8,27 @@ volumes:
     driver: local
   redisinsight:
     driver: local
+  metrics:
 
 services:
+  prometheus:
+    image: prom/prometheus:v2.40.4
+    ports:
+      - 9090:9090
+    volumes:
+      - ./metrics/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:9.3.0
+    ports:
+      - 3000:3000
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=devops123
+    volumes:
+      - ./metrics/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - metrics:/var/lib/grafana
+
   rabbitmq:
     image: rabbitmq:3.8-management
     hostname: rabbitmq
