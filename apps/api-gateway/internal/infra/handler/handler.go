@@ -37,7 +37,7 @@ func getStatement(c echo.Context) error {
 		Items:     items,
 	})
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err)
+		return HandleGrpcToHttpError(c, err)
 	}
 	return c.JSON(http.StatusOK, res)
 }
@@ -45,19 +45,18 @@ func getStatement(c echo.Context) error {
 func createTransaction(c echo.Context) error {
 	body := new(transaction.CreateTransactionIn)
 	if err := c.Bind(&body); err != nil {
-		return c.JSON(http.StatusUnprocessableEntity, err.Error())
+		return c.JSON(http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
 	}
 
-	err := validateCreateTransactionPayload(body)
-	if err != nil {
-		return c.JSON(http.StatusUnprocessableEntity, err.Error())
+	if err := validateCreateTransactionPayload(body); err != nil {
+		return c.JSON(http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
 	}
 
 	trxService := grpc.NewGrpcTransactionService()
 	uc := usecase.NewCreateTransaction(trxService)
 	trx, err := uc.Execute(body)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err)
+		return HandleGrpcToHttpError(c, err)
 	}
 	return c.JSON(http.StatusCreated, trx)
 }
