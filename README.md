@@ -41,11 +41,11 @@ To get started with Mini Bank, follow these steps:
 
    ```bash
     # API gateway
-    cd apps/api-gateway && go mod tidy
+    cd apps/api-gateway && go mod tidy && cp .env.example .env
     # Account Service
-    cd apps/svc-account && go mod tidy
+    cd apps/svc-account && go mod tidy && cp .env.example .env
     # Transaction Service
-    cd apps/svc-transaction && go mod tidy
+    cd apps/svc-transaction && go mod tidy && cp .env.example .env
    ```
 
 4. Start services
