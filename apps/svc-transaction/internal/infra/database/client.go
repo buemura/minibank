@@ -28,4 +28,11 @@ func Connect() {
 		os.Exit(1)
 	}
 	Conn = pool
+
+	// conn, err := pool.Acquire(context.Background())
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Unable to acquire database connection: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// defer conn.Release()
 }
