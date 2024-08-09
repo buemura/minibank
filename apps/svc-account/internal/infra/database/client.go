@@ -20,7 +20,7 @@ func Connect() {
 		os.Exit(1)
 	}
 
-	dbConfig.MaxConns = 10
+	dbConfig.MaxConns = 100
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), dbConfig)
 	if err != nil {

@@ -1,25 +1,12 @@
 GET http://localhost:8080/account/clzc1pqd0000008mnfmkq9r50/statement?page=1&items=10 HTTP/1.1
 
-
-### TRANSFER
-
-POST http://localhost:8080/account/clzc1pqd0000008mnfmkq9r50/transaction HTTP/1.1
-content-type: application/json
-
-{
-    "account_id": "clzc1pqd0000008mnfmkq9r50",
-    "destination_account_id": "cjd7n3v6g0004gq9g7j2m3pbk",
-    "Amount": 2000,
-    "transaction_type": "TRANSFER"
-}
-
 ### DEPOSIT
 
-POST http://localhost:8080/account/clzc1pqd0000008mnfmkq9r50/transaction HTTP/1.1
+POST http://localhost:8080/account/cjd7n3v6g0001gq9g7j2m3pbk/transaction HTTP/1.1
 content-type: application/json
 
 {
-    "account_id": "clzc1pqd0000008mnfmkq9r50",
+    "account_id": "cjd7n3v6g0001gq9g7j2m3pbk",
     "Amount": 2000,
     "transaction_type": "DEPOSIT"
 }
@@ -33,4 +20,16 @@ content-type: application/json
     "account_id": "cjd7n3v6g0001gq9g7j2m3pbk",
     "Amount": 1000,
     "transaction_type": "WITHDRAWAL"
+}
+
+### TRANSFER
+
+POST http://localhost:8080/account/clzc1pqd0000008mnfmkq9r50/transaction HTTP/1.1
+content-type: application/json
+
+{
+    "account_id": "clzc1pqd0000008mnfmkq9r50",
+    "destination_account_id": "cjd7n3v6g0004gq9g7j2m3pbk",
+    "Amount": 2000,
+    "transaction_type": "TRANSFER"
 }

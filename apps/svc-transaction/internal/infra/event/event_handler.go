@@ -13,6 +13,13 @@ import (
 )
 
 func TransactionEventHandler(ch *amqp.Channel, msg amqp.Delivery) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("Recovered from panic in handler: %v", err)
+		}
+		msg.Ack(false)
+	}()
+
 	switch msg.RoutingKey {
 	case queue.TRANSFER_REQUESTED_QUEUE:
 		// Parse message body
