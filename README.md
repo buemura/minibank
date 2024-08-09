@@ -51,9 +51,11 @@ To get started with Mini Bank, follow these steps:
 4. Start services
    ```bash
     # API gateway
-    cd apps/api-gateway && go run cmd/main.go
-    # Account Service
-    cd apps/svc-account && go run cmd/main.go
-    # Transaction Service
-    cd apps/svc-transaction && go run cmd/main.go
+    cd apps/api-gateway && go run cmd/http/main.go
+    # Account Service GRPC
+    cd apps/svc-account && go run cmd/grpc/main.go
+    # Transaction Service GRPC
+    cd apps/svc-transaction && go run cmd/grpc/main.go
+    # Transaction Service Consumer
+    cd apps/svc-transaction && go run cmd/consumer/main.go
    ```

@@ -10,7 +10,6 @@ import (
 	"github.com/buemura/minibank/packages/gen/protos"
 	"github.com/buemura/minibank/svc-transaction/config"
 	"github.com/buemura/minibank/svc-transaction/internal/infra/database"
-	"github.com/buemura/minibank/svc-transaction/internal/infra/event"
 	"github.com/buemura/minibank/svc-transaction/internal/infra/handler"
 	"google.golang.org/grpc"
 )
@@ -21,9 +20,6 @@ func init() {
 }
 
 func main() {
-	// Start queue consumer in a separate goroutine to handle incoming events.
-	go event.StartConsumer()
-
 	port := ":" + config.GRPC_PORT
 	listener, err := net.Listen("tcp", port)
 	if err != nil {

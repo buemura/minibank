@@ -83,19 +83,8 @@ func (c TransactionHandler) CreateTransaction(
 		return nil, HandleGrpcError(err)
 	}
 
-	// Send message to Queue according to TransactionType
-	var queueName string
-	switch in.TransactionType {
-	case string(transaction.Transfer):
-		queueName = queue.TRANSFER_REQUESTED_QUEUE
-	case string(transaction.Deposit):
-		queueName = queue.DEPOSIT_REQUESTED_QUEUE
-	case string(transaction.Withdrawal):
-		queueName = queue.WITHDRAW_REQUESTED_QUEUE
-	}
-
 	ch := queue.CreateChannel(config.BROKER_URL)
-	err = queue.PublishToQueue(ch, trx, queueName)
+	err = queue.PublishToQueue(ch, trx, queue.TRANSACTION_REQUESTED_QUEUE)
 	if err != nil {
 		slog.Error("[TransactionHandler][CreateAccount] - Error:", err.Error())
 		return nil, HandleGrpcError(err)
