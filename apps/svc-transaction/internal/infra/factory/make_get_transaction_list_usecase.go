@@ -8,7 +8,7 @@ import (
 )
 
 func MakeGetTransactionListUsecase() *usecase.GetTransactionList {
-	trxRepo := database.NewPgxTransactionRepository()
+	trxRepo := database.NewSqlTransactionRepository()
 	cacheRepo := cache.NewRedisCacheRepository(config.REDIS_URL, config.REDIS_PASSWORD)
 	return usecase.NewGetTransactionList(cacheRepo, trxRepo)
 }

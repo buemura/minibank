@@ -1,51 +1,44 @@
 package database
 
 import (
-	"context"
-	"errors"
+	"database/sql"
 
 	"github.com/buemura/minibank/svc-transaction/internal/core/domain/common"
 	"github.com/buemura/minibank/svc-transaction/internal/core/domain/transaction"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type PgxTransactionRepository struct {
-	db *pgxpool.Pool
+type SqlTransactionRepository struct {
+	db *sql.DB
 }
 
-func NewPgxTransactionRepository() *PgxTransactionRepository {
-	return &PgxTransactionRepository{db: Conn}
+func NewSqlTransactionRepository() *SqlTransactionRepository {
+	return &SqlTransactionRepository{db: Conn}
 }
 
-func (r *PgxTransactionRepository) FindById(id string) (*transaction.Transaction, error) {
-	rows, err := r.db.Query(
-		context.Background(),
+func (r *SqlTransactionRepository) FindById(id string) (*transaction.Transaction, error) {
+	var trx *transaction.Transaction
+	err := r.db.QueryRow(
 		`SELECT id, account_id, destination_account_id, amount, status, transaction_type, created_at, updated_at
 		FROM "transactions"
 		WHERE id = $1`,
 		id,
-	)
+	).Scan(trx)
 	if err != nil {
 		return nil, err
 	}
 
-	trx, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByPos[transaction.Transaction])
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, transaction.ErrTransactionNotFound
-		}
-		return nil, err
+	if trx == nil {
+		return nil, transaction.ErrTransactionNotFound
 	}
+
 	return trx, nil
 }
 
-func (r *PgxTransactionRepository) FindByAccountId(in *transaction.GetTransactionListIn) (*transaction.GetTransactionListOut, error) {
+func (r *SqlTransactionRepository) FindByAccountId(in *transaction.GetTransactionListIn) (*transaction.GetTransactionListOut, error) {
 	limit := in.Items
 	offset := (in.Page - 1) * in.Items
 
 	rows, err := r.db.Query(
-		context.Background(),
 		`SELECT id, account_id, destination_account_id, amount, status, transaction_type, created_at, updated_at
 		FROM "transactions"
 		WHERE account_id = $1 OR destination_account_id = $1
@@ -55,14 +48,23 @@ func (r *PgxTransactionRepository) FindByAccountId(in *transaction.GetTransactio
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	trxs, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByPos[transaction.Transaction])
-	if err != nil {
+	var trxs []*transaction.Transaction
+
+	for rows.Next() {
+		var trx *transaction.Transaction
+		if err := rows.Scan(trx); err != nil {
+			return nil, err
+		}
+		trxs = append(trxs, trx)
+	}
+	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 
 	var totalCount int
-	err = r.db.QueryRow(context.Background(), `SELECT count(id) as total_count FROM "transactions"`).Scan(&totalCount)
+	err = r.db.QueryRow(`SELECT count(id) as total_count FROM "transactions"`).Scan(&totalCount)
 	if err != nil {
 		return nil, err
 	}
@@ -78,9 +80,8 @@ func (r *PgxTransactionRepository) FindByAccountId(in *transaction.GetTransactio
 	}, nil
 }
 
-func (r *PgxTransactionRepository) Create(trx *transaction.Transaction) (*transaction.Transaction, error) {
-	_, err := r.db.Query(
-		context.Background(),
+func (r *SqlTransactionRepository) Create(trx *transaction.Transaction) (*transaction.Transaction, error) {
+	_, err := r.db.Exec(
 		`INSERT INTO "transactions" (id, account_id, destination_account_id, amount, status, transaction_type, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
 		trx.ID, trx.AccountID, trx.DestinationAccountID, trx.Amount, trx.Status, trx.TransactionType, trx.CreatedAt, trx.UpdatedAt,
 	)
@@ -90,9 +91,8 @@ func (r *PgxTransactionRepository) Create(trx *transaction.Transaction) (*transa
 	return trx, nil
 }
 
-func (r *PgxTransactionRepository) Update(trx *transaction.Transaction) (*transaction.Transaction, error) {
-	_, err := r.db.Query(
-		context.Background(),
+func (r *SqlTransactionRepository) Update(trx *transaction.Transaction) (*transaction.Transaction, error) {
+	_, err := r.db.Exec(
 		`UPDATE "transactions" SET status=$1, updated_at=$2 WHERE id=$3`,
 		trx.Status, trx.UpdatedAt, trx.ID,
 	)

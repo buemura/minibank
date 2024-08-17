@@ -8,7 +8,7 @@ import (
 )
 
 func MakeCreateAccountUsecase() *usecase.CreateAccount {
-	accountRepo := database.NewPgxAccountRepository()
+	accountRepo := database.NewSqlAccountRepository()
 	cacheRepo := cache.NewRedisCacheRepository(config.REDIS_URL, config.REDIS_PASSWORD)
 	return usecase.NewCreateAccount(cacheRepo, accountRepo)
 }

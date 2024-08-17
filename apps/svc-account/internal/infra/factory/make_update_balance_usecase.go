@@ -8,7 +8,7 @@ import (
 )
 
 func MakeUpdateBalanceUsecase() *usecase.UpdateBalance {
-	accountRepo := database.NewPgxAccountRepository()
+	accountRepo := database.NewSqlAccountRepository()
 	cacheRepo := cache.NewRedisCacheRepository(config.REDIS_URL, config.REDIS_PASSWORD)
 	return usecase.NewUpdateBalance(cacheRepo, accountRepo)
 }

@@ -10,7 +10,7 @@ import (
 
 func MakePerformDepositUsecase() *usecase.PerformDeposit {
 	accService := grpc.NewGrpcAccountService()
-	trxRepo := database.NewPgxTransactionRepository()
+	trxRepo := database.NewSqlTransactionRepository()
 	cacheRepo := cache.NewRedisCacheRepository(config.REDIS_URL, config.REDIS_PASSWORD)
 	return usecase.NewPerformDeposit(accService, cacheRepo, trxRepo)
 }
