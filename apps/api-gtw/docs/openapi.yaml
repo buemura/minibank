@@ -1,0 +1,697 @@
+openapi: 3.0.3
+info:
+  title: Mini Bank API
+  description: |
+    A microservices-based banking system API Gateway.
+    Provides account management, transaction processing, and authentication.
+  version: 1.0.0
+  contact:
+    name: Mini Bank
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+tags:
+  - name: Health
+    description: Health check
+  - name: Auth
+    description: Authentication and user management
+  - name: Accounts
+    description: Account management
+  - name: Transactions
+    description: Transaction processing
+
+security:
+  - BearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Invalid request or registration failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogoutRequest"
+      responses:
+        "200":
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logged out successfully
+        "500":
+          description: Logout failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/accounts:
+    get:
+      tags: [Accounts]
+      summary: List accounts for authenticated user
+      responses:
+        "200":
+          description: List of accounts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Account"
+        "500":
+          description: Failed to get accounts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags: [Accounts]
+      summary: Create a new account
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountRequest"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account:
+                    $ref: "#/components/schemas/Account"
+        "500":
+          description: Failed to create account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/accounts/{id}:
+    get:
+      tags: [Accounts]
+      summary: Get account by ID
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      responses:
+        "200":
+          description: Account details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account:
+                    $ref: "#/components/schemas/Account"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/accounts/{id}/balance:
+    get:
+      tags: [Accounts]
+      summary: Get account balance
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      responses:
+        "200":
+          description: Account balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BalanceResponse"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/accounts/{id}/transfers:
+    post:
+      tags: [Transactions]
+      summary: Create a transfer
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferRequest"
+      responses:
+        "200":
+          description: Transfer successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionSuccessResponse"
+        "400":
+          description: Transfer failed (validation or business rule)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/accounts/{id}/deposits:
+    post:
+      tags: [Transactions]
+      summary: Create a deposit
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepositRequest"
+      responses:
+        "200":
+          description: Deposit successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionSuccessResponse"
+        "400":
+          description: Deposit failed (validation or business rule)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/accounts/{id}/transactions:
+    get:
+      tags: [Transactions]
+      summary: Get transaction history for account
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Transaction history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionHistoryResponse"
+        "500":
+          description: Failed to get transaction history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/accounts/{id}/statement:
+    get:
+      tags: [Transactions]
+      summary: Get account statement
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+        - name: start_date
+          in: query
+          description: Start date (YYYY-MM-DD). Defaults to 1 month ago.
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+        - name: end_date
+          in: query
+          description: End date (YYYY-MM-DD). Defaults to today.
+          schema:
+            type: string
+            format: date
+            example: "2025-01-31"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Account statement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatementResponse"
+        "500":
+          description: Failed to get statement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/transactions/{id}:
+    get:
+      tags: [Transactions]
+      summary: Get transaction by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Transaction ID
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Transaction details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transaction:
+                    $ref: "#/components/schemas/Transaction"
+        "404":
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    AccountId:
+      name: id
+      in: path
+      required: true
+      description: Account ID
+      schema:
+        type: string
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+
+    # Auth schemas
+    RegisterRequest:
+      type: object
+      required: [email, password, full_name]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          example: "securepass123"
+        full_name:
+          type: string
+          example: John Doe
+        phone:
+          type: string
+          example: "+5511999999999"
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          example: "securepass123"
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    LogoutRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+
+    # Account schemas
+    CreateAccountRequest:
+      type: object
+      properties:
+        account_type:
+          type: string
+          default: checking
+          example: checking
+
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        account_number:
+          type: string
+        agency:
+          type: string
+        account_type:
+          type: string
+        balance:
+          type: string
+        currency:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    BalanceResponse:
+      type: object
+      properties:
+        balance:
+          type: string
+        currency:
+          type: string
+
+    # Transaction schemas
+    TransferRequest:
+      type: object
+      required: [idempotency_key, destination_account_number, amount]
+      properties:
+        idempotency_key:
+          type: string
+          example: "txn-uuid-123"
+        destination_account_number:
+          type: string
+          example: "000012345"
+        amount:
+          type: string
+          example: "100.00"
+        description:
+          type: string
+          example: "Monthly rent payment"
+
+    DepositRequest:
+      type: object
+      required: [idempotency_key, amount]
+      properties:
+        idempotency_key:
+          type: string
+          example: "dep-uuid-456"
+        amount:
+          type: string
+          example: "500.00"
+        description:
+          type: string
+          example: "Salary deposit"
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+        idempotency_key:
+          type: string
+        type:
+          type: string
+          enum: [TRANSFER, DEPOSIT, WITHDRAWAL, FEE, UNKNOWN]
+        status:
+          type: string
+          enum: [PENDING, COMPLETED, FAILED, REVERSED, UNKNOWN]
+        source_account_id:
+          type: string
+        source_account_number:
+          type: string
+        destination_account_id:
+          type: string
+        destination_account_number:
+          type: string
+        amount:
+          type: string
+        currency:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        processed_at:
+          type: string
+          format: date-time
+
+    TransactionSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        transaction:
+          $ref: "#/components/schemas/Transaction"
+
+    TransactionErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error_code:
+          type: string
+        error_message:
+          type: string
+
+    TransactionHistoryResponse:
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        total_count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+
+    StatementResponse:
+      type: object
+      properties:
+        account_id:
+          type: string
+        opening_balance:
+          type: string
+        closing_balance:
+          type: string
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        total_count:
+          type: integer
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date

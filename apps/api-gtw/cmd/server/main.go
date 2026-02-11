@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/buemura/minibank/api-gtw/docs"
 	"github.com/buemura/minibank/api-gtw/internal/config"
 	"github.com/buemura/minibank/api-gtw/internal/handlers"
 	"github.com/buemura/minibank/api-gtw/internal/middleware"
@@ -70,6 +71,9 @@ func main() {
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+
+	router.GET("/docs", docs.ScalarHandler())
+	router.GET("/docs/openapi.yaml", docs.SpecHandler())
 
 	v1 := router.Group("/api/v1")
 	{
