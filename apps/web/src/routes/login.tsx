@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
 import Card from "@/components/common/Card";
+import GopherLogo from "@/components/common/GopherLogo";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -25,7 +26,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold">
+          <h1 className="text-4xl font-bold flex items-center justify-center gap-2">
+            <GopherLogo className="h-10 w-10" />
             <span className="text-primary-600">Mini</span>
             <span className="text-gray-600 dark:text-gray-400 font-light">
               Bank

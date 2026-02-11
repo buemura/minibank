@@ -1,6 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/common/ThemeToggle";
+import GopherLogo from "@/components/common/GopherLogo";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -23,6 +24,7 @@ export default function Navbar() {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/dashboard" className="flex items-center space-x-2">
+              <GopherLogo className="h-8 w-8" />
               <span className="text-2xl font-bold text-primary-600">Mini</span>
               <span className="text-2xl font-light text-gray-600 dark:text-gray-400">
                 Bank
