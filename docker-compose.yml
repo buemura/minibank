@@ -11,23 +11,23 @@ volumes:
   metrics:
 
 services:
-  prometheus:
-    image: prom/prometheus:v2.40.4
-    ports:
-      - 9090:9090
-    volumes:
-      - ./metrics/prometheus.yml:/etc/prometheus/prometheus.yml
+  # prometheus:
+  #   image: prom/prometheus:v2.40.4
+  #   ports:
+  #     - 9090:9090
+  #   volumes:
+  #     - ./metrics/prometheus.yml:/etc/prometheus/prometheus.yml
 
-  grafana:
-    image: grafana/grafana:9.3.0
-    ports:
-      - 3000:3000
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=devops123
-    volumes:
-      - ./metrics/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
-      - metrics:/var/lib/grafana
+  # grafana:
+  #   image: grafana/grafana:9.3.0
+  #   ports:
+  #     - 3000:3000
+  #   environment:
+  #     - GF_SECURITY_ADMIN_USER=admin
+  #     - GF_SECURITY_ADMIN_PASSWORD=devops123
+  #   volumes:
+  #     - ./metrics/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+  #     - metrics:/var/lib/grafana
 
   rabbitmq:
     image: rabbitmq:3.8-management
@@ -53,99 +53,17 @@ services:
     networks:
       - minibank
 
-  db-account:
+  postgres:
     image: postgres:latest
-    hostname: db-account
+    hostname: postgres
     environment:
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=admin
-      - POSTGRES_DB=svc_account
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
     ports:
       - "5432:5432"
     volumes:
-      - ./configs/svc_account_init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./configs/init.sql:/docker-entrypoint-initdb.d/init.sql
     command: postgres -c checkpoint_timeout=600 -c max_wal_size=4096
-    networks:
-      - minibank
-
-  db-transaction:
-    image: postgres:latest
-    hostname: db-transaction
-    environment:
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=admin
-      - POSTGRES_DB=svc_transaction
-    ports:
-      - "15432:5432"
-    volumes:
-      - ./configs/svc_transaction_init.sql:/docker-entrypoint-initdb.d/init.sql
-    command: postgres -c checkpoint_timeout=600 -c max_wal_size=4096
-    networks:
-      - minibank
-
-  api-gateway:
-    build:
-      context: .
-      dockerfile: ./apps/api-gateway/Dockerfile
-    hostname: api-gateway
-    environment:
-      - PORT=8080
-      - GRPC_HOST_SVC_ACCOUNT=172.17.0.1:50051
-      - GRPC_HOST_SVC_TRANSACTION=172.17.0.1:50052
-    depends_on:
-      - svc_account
-      - svc_transaction_grpc
-    ports:
-      - "8080:8080"
-    networks:
-      - minibank
-
-  svc_account:
-    build:
-      context: .
-      dockerfile: ./apps/svc-account/Dockerfile
-    hostname: svc_account
-    environment:
-      - HTTP_PORT=8081
-      - GRPC_PORT=50051
-      - DATABASE_URL=postgresql://admin:admin@172.17.0.1:5432/svc_account
-      - REDIS_URL=172.17.0.1:6379
-    depends_on:
-      - db-account
-    networks:
-      - minibank
-
-  svc_transaction_grpc:
-    build:
-      context: .
-      dockerfile: ./apps/svc-transaction/Dockerfile.grpc
-    hostname: svc_transaction
-    environment:
-      - HTTP_PORT=8082
-      - GRPC_PORT=50052
-      - DATABASE_URL=postgresql://admin:admin@172.17.0.1:15432/svc_transaction
-      - BROKER_URL=amqp://guest:guest@172.17.0.1:5672
-      - REDIS_URL=172.17.0.1:6379
-      - GRPC_HOST_SVC_ACCOUNT=172.17.0.1:50051
-    depends_on:
-      - db-transaction
-    networks:
-      - minibank
-
-  svc_transaction_consumer:
-    build:
-      context: .
-      dockerfile: ./apps/svc-transaction/Dockerfile.consumer
-    hostname: svc_transaction
-    environment:
-      - HTTP_PORT=8082
-      - GRPC_PORT=50052
-      - DATABASE_URL=postgresql://admin:admin@172.17.0.1:15432/svc_transaction
-      - BROKER_URL=amqp://guest:guest@172.17.0.1:5672
-      - REDIS_URL=172.17.0.1:6379
-      - GRPC_HOST_SVC_ACCOUNT=172.17.0.1:50051
-    depends_on:
-      - rabbitmq
-      - db-transaction
     networks:
       - minibank

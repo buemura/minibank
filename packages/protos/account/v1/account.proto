@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package account.v1;
+
+option go_package = "github.com/buemura/minibank/proto/account/v1;accountv1";
+
+import "google/protobuf/timestamp.proto";
+
+service AccountService {
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
+  rpc GetAccount(GetAccountRequest) returns (GetAccountResponse);
+  rpc GetAccountByUserId(GetAccountByUserIdRequest) returns (GetAccountByUserIdResponse);
+  rpc GetAccountByNumber(GetAccountByNumberRequest) returns (GetAccountByNumberResponse);
+  rpc GetBalance(GetBalanceRequest) returns (GetBalanceResponse);
+  rpc DebitAccount(DebitAccountRequest) returns (DebitAccountResponse);
+  rpc CreditAccount(CreditAccountRequest) returns (CreditAccountResponse);
+}
+
+message Account {
+  string id = 1;
+  string user_id = 2;
+  string account_number = 3;
+  string agency = 4;
+  string account_type = 5;
+  string balance = 6;
+  string currency = 7;
+  string status = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message CreateAccountRequest {
+  string user_id = 1;
+  string account_type = 2;
+}
+
+message CreateAccountResponse {
+  Account account = 1;
+}
+
+message GetAccountRequest {
+  string account_id = 1;
+}
+
+message GetAccountResponse {
+  Account account = 1;
+}
+
+message GetAccountByUserIdRequest {
+  string user_id = 1;
+}
+
+message GetAccountByUserIdResponse {
+  repeated Account accounts = 1;
+}
+
+message GetAccountByNumberRequest {
+  string account_number = 1;
+}
+
+message GetAccountByNumberResponse {
+  Account account = 1;
+}
+
+message GetBalanceRequest {
+  string account_id = 1;
+}
+
+message GetBalanceResponse {
+  string account_id = 1;
+  string balance = 2;
+  string currency = 3;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+message DebitAccountRequest {
+  string account_id = 1;
+  string amount = 2;
+  string transaction_id = 3;
+}
+
+message DebitAccountResponse {
+  bool success = 1;
+  string new_balance = 2;
+  string error_message = 3;
+}
+
+message CreditAccountRequest {
+  string account_id = 1;
+  string amount = 2;
+  string transaction_id = 3;
+}
+
+message CreditAccountResponse {
+  bool success = 1;
+  string new_balance = 2;
+}

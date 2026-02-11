@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package transaction.v1;
+
+option go_package = "github.com/buemura/minibank/proto/transaction/v1;transactionv1";
+
+import "google/protobuf/timestamp.proto";
+
+service TransactionService {
+  rpc Transfer(TransferRequest) returns (TransferResponse);
+  rpc Deposit(DepositRequest) returns (DepositResponse);
+  rpc GetTransaction(GetTransactionRequest) returns (GetTransactionResponse);
+  rpc GetTransactionHistory(GetTransactionHistoryRequest) returns (GetTransactionHistoryResponse);
+  rpc GetStatement(GetStatementRequest) returns (GetStatementResponse);
+}
+
+enum TransactionType {
+  TRANSACTION_TYPE_UNSPECIFIED = 0;
+  TRANSACTION_TYPE_TRANSFER = 1;
+  TRANSACTION_TYPE_DEPOSIT = 2;
+  TRANSACTION_TYPE_WITHDRAWAL = 3;
+  TRANSACTION_TYPE_FEE = 4;
+}
+
+enum TransactionStatus {
+  TRANSACTION_STATUS_UNSPECIFIED = 0;
+  TRANSACTION_STATUS_PENDING = 1;
+  TRANSACTION_STATUS_COMPLETED = 2;
+  TRANSACTION_STATUS_FAILED = 3;
+  TRANSACTION_STATUS_REVERSED = 4;
+}
+
+message Transaction {
+  string id = 1;
+  string idempotency_key = 2;
+  TransactionType type = 3;
+  TransactionStatus status = 4;
+  string source_account_id = 5;
+  string source_account_number = 6;
+  string destination_account_id = 7;
+  string destination_account_number = 8;
+  string amount = 9;
+  string currency = 10;
+  string description = 11;
+  google.protobuf.Timestamp processed_at = 12;
+  google.protobuf.Timestamp created_at = 13;
+}
+
+message TransferRequest {
+  string idempotency_key = 1;
+  string source_account_id = 2;
+  string destination_account_number = 3;
+  string amount = 4;
+  string description = 5;
+}
+
+message TransferResponse {
+  bool success = 1;
+  Transaction transaction = 2;
+  string error_code = 3;
+  string error_message = 4;
+}
+
+message DepositRequest {
+  string idempotency_key = 1;
+  string account_id = 2;
+  string amount = 3;
+  string description = 4;
+}
+
+message DepositResponse {
+  bool success = 1;
+  Transaction transaction = 2;
+  string error_code = 3;
+  string error_message = 4;
+}
+
+message GetTransactionRequest {
+  string transaction_id = 1;
+}
+
+message GetTransactionResponse {
+  Transaction transaction = 1;
+}
+
+message GetTransactionHistoryRequest {
+  string account_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  TransactionType type_filter = 4;
+}
+
+message GetTransactionHistoryResponse {
+  repeated Transaction transactions = 1;
+  int32 total_count = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message GetStatementRequest {
+  string account_id = 1;
+  google.protobuf.Timestamp start_date = 2;
+  google.protobuf.Timestamp end_date = 3;
+  int32 page = 4;
+  int32 page_size = 5;
+}
+
+message GetStatementResponse {
+  string account_id = 1;
+  string opening_balance = 2;
+  string closing_balance = 3;
+  repeated Transaction transactions = 4;
+  int32 total_count = 5;
+  google.protobuf.Timestamp start_date = 6;
+  google.protobuf.Timestamp end_date = 7;
+}

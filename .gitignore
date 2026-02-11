@@ -1,2 +1,8 @@
 .env
 tmp
+
+.vscode/
+.claude/
+CLAUDE.md
+
+node_modules/
