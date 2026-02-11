@@ -8,7 +8,7 @@ The architecture of Mini Bank consists of the following microservices:
 
 1. `svc-transaction`: This service is responsible for handling all the transaction-related operations, such as `DEPOSIT`, `TRANSFER`, and `WITHDRAWAL`. It serves `GRPC` methods.
 2. `svc-account`: This service manages the account-related operations, such as account details retrieval, creating, and updating balances. It serves `GRPC` methods.
-3. `api-gateway`: This service is responsible for centralizing user requests and orchestrating redirects to the necessary services. It serves `HTTP` endpoints.
+3. `api-gtw`: This service is responsible for centralizing user requests and orchestrating redirects to the necessary services. It serves `HTTP` endpoints.
 
 ## Diagrams
 
@@ -41,7 +41,7 @@ To get started with Mini Bank, follow these steps:
 
    ```bash
     # API gateway
-    cd apps/api-gateway && go mod tidy && cp .env.example .env
+    cd apps/api-gtw && go mod tidy && cp .env.example .env
     # Account Service
     cd apps/svc-account && go mod tidy && cp .env.example .env
     # Transaction Service
@@ -51,7 +51,7 @@ To get started with Mini Bank, follow these steps:
 4. Start services
    ```bash
     # API gateway
-    cd apps/api-gateway && go run cmd/http/main.go
+    cd apps/api-gtw && go run cmd/http/main.go
     # Account Service GRPC
     cd apps/svc-account && go run cmd/grpc/main.go
     # Transaction Service GRPC
