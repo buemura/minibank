@@ -232,6 +232,109 @@ func TestDeposit_Handler_BusinessError(t *testing.T) {
 	txClient.AssertExpectations(t)
 }
 
+func TestWithdraw_Handler_Success(t *testing.T) {
+	txClient := new(mocks.MockTransactionServiceClient)
+	handler := NewTransactionHandler(txClient)
+
+	withdrawTx := protoTransaction()
+	withdrawTx.Type = transactionpb.TransactionType_TRANSACTION_TYPE_WITHDRAWAL
+
+	txClient.On("Withdraw", mock.Anything, mock.Anything).Return(&transactionpb.WithdrawResponse{
+		Success:     true,
+		Transaction: withdrawTx,
+	}, nil)
+
+	body, _ := json.Marshal(map[string]string{
+		"idempotency_key": "key-1",
+		"amount":          "200.00",
+		"description":     "test withdrawal",
+	})
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/accounts/acc-1/withdrawals", bytes.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Params = gin.Params{{Key: "id", Value: "acc-1"}}
+
+	handler.Withdraw(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, true, resp["success"])
+	txClient.AssertExpectations(t)
+}
+
+func TestWithdraw_Handler_InvalidBody(t *testing.T) {
+	txClient := new(mocks.MockTransactionServiceClient)
+	handler := NewTransactionHandler(txClient)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/accounts/acc-1/withdrawals", bytes.NewReader([]byte("{}")))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Params = gin.Params{{Key: "id", Value: "acc-1"}}
+
+	handler.Withdraw(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestWithdraw_Handler_gRPCError(t *testing.T) {
+	txClient := new(mocks.MockTransactionServiceClient)
+	handler := NewTransactionHandler(txClient)
+
+	txClient.On("Withdraw", mock.Anything, mock.Anything).Return(nil, errors.New("error"))
+
+	body, _ := json.Marshal(map[string]string{
+		"idempotency_key": "key-1",
+		"amount":          "200.00",
+	})
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/accounts/acc-1/withdrawals", bytes.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Params = gin.Params{{Key: "id", Value: "acc-1"}}
+
+	handler.Withdraw(c)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	txClient.AssertExpectations(t)
+}
+
+func TestWithdraw_Handler_BusinessError(t *testing.T) {
+	txClient := new(mocks.MockTransactionServiceClient)
+	handler := NewTransactionHandler(txClient)
+
+	txClient.On("Withdraw", mock.Anything, mock.Anything).Return(&transactionpb.WithdrawResponse{
+		Success:      false,
+		ErrorCode:    "WITHDRAWAL_FAILED",
+		ErrorMessage: "insufficient funds",
+	}, nil)
+
+	body, _ := json.Marshal(map[string]string{
+		"idempotency_key": "key-1",
+		"amount":          "200.00",
+	})
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/accounts/acc-1/withdrawals", bytes.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Params = gin.Params{{Key: "id", Value: "acc-1"}}
+
+	handler.Withdraw(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "WITHDRAWAL_FAILED", resp["error_code"])
+	txClient.AssertExpectations(t)
+}
+
 func TestGetTransaction_Handler_Success(t *testing.T) {
 	txClient := new(mocks.MockTransactionServiceClient)
 	handler := NewTransactionHandler(txClient)

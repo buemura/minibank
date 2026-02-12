@@ -36,3 +36,8 @@ func (m *MockUserRepository) Update(ctx context.Context, user *domain.User) erro
 	args := m.Called(ctx, user)
 	return args.Error(0)
 }
+
+func (m *MockUserRepository) UpdatePassword(ctx context.Context, userID string, passwordHash string) error {
+	args := m.Called(ctx, userID, passwordHash)
+	return args.Error(0)
+}

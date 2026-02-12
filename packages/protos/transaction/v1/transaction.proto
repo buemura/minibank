@@ -9,6 +9,7 @@ import "google/protobuf/timestamp.proto";
 service TransactionService {
   rpc Transfer(TransferRequest) returns (TransferResponse);
   rpc Deposit(DepositRequest) returns (DepositResponse);
+  rpc Withdraw(WithdrawRequest) returns (WithdrawResponse);
   rpc GetTransaction(GetTransactionRequest) returns (GetTransactionResponse);
   rpc GetTransactionHistory(GetTransactionHistoryRequest) returns (GetTransactionHistoryResponse);
   rpc GetStatement(GetStatementRequest) returns (GetStatementResponse);
@@ -69,6 +70,20 @@ message DepositRequest {
 }
 
 message DepositResponse {
+  bool success = 1;
+  Transaction transaction = 2;
+  string error_code = 3;
+  string error_message = 4;
+}
+
+message WithdrawRequest {
+  string idempotency_key = 1;
+  string account_id = 2;
+  string amount = 3;
+  string description = 4;
+}
+
+message WithdrawResponse {
   bool success = 1;
   Transaction transaction = 2;
   string error_code = 3;

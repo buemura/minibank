@@ -42,10 +42,18 @@ export default function TransactionList({ transactions, currentAccountId }: Tran
   }
 
   function getTransactionIcon(transaction: Transaction): string {
-    if (transaction.type === 'TRANSFER') {
-      return isOutgoing(transaction) ? 'arrow-up' : 'arrow-down'
+    if (transaction.type === 'WITHDRAWAL') return 'arrow-up'
+    if (transaction.type === 'DEPOSIT') return 'arrow-down'
+    return isOutgoing(transaction) ? 'arrow-up' : 'arrow-down'
+  }
+
+  function getTransactionLabel(transaction: Transaction): string {
+    if (transaction.type === 'WITHDRAWAL') return 'Withdrawal'
+    if (transaction.type === 'DEPOSIT') return 'Deposit'
+    if (isOutgoing(transaction)) {
+      return `Sent to ${transaction.destination_account_number}`
     }
-    return 'circle'
+    return `Received from ${transaction.source_account_number}`
   }
 
   if (transactions.length === 0) {
@@ -66,9 +74,13 @@ export default function TransactionList({ transactions, currentAccountId }: Tran
           <div className="flex items-center space-x-4">
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                isOutgoing(transaction)
-                  ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                  : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                transaction.type === 'DEPOSIT'
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                  : transaction.type === 'WITHDRAWAL'
+                    ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                    : isOutgoing(transaction)
+                      ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                      : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
               }`}
             >
               {getTransactionIcon(transaction) === 'arrow-up' ? (
@@ -84,8 +96,7 @@ export default function TransactionList({ transactions, currentAccountId }: Tran
 
             <div>
               <p className="font-medium text-gray-900 dark:text-gray-100">
-                {isOutgoing(transaction) ? 'Sent to' : 'Received from'}{' '}
-                {isOutgoing(transaction) ? transaction.destination_account_number : transaction.source_account_number}
+                {getTransactionLabel(transaction)}
               </p>
               {transaction.description && (
                 <p className="text-sm text-gray-500 dark:text-gray-400">{transaction.description}</p>
@@ -97,10 +108,16 @@ export default function TransactionList({ transactions, currentAccountId }: Tran
           <div className="text-right">
             <p
               className={`font-semibold ${
-                isOutgoing(transaction) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+                transaction.type === 'DEPOSIT'
+                  ? 'text-green-600 dark:text-green-400'
+                  : transaction.type === 'WITHDRAWAL'
+                    ? 'text-red-600 dark:text-red-400'
+                    : isOutgoing(transaction)
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-green-600 dark:text-green-400'
               }`}
             >
-              {isOutgoing(transaction) ? '-' : '+'}
+              {transaction.type === 'DEPOSIT' ? '+' : transaction.type === 'WITHDRAWAL' ? '-' : isOutgoing(transaction) ? '-' : '+'}
               {formatCurrency(transaction.amount, transaction.currency)}
             </p>
             <span className={`inline-block px-2 py-1 text-xs rounded-full ${getStatusColor(transaction.status)}`}>

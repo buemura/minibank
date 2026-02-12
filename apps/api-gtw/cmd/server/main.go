@@ -110,6 +110,7 @@ func main() {
 			auth.POST("/refresh", authHandler.Refresh)
 			auth.POST("/logout", authHandler.Logout)
 			auth.GET("/me", authMiddleware.Authenticate(), authHandler.Me)
+			auth.POST("/change-password", authMiddleware.Authenticate(), authHandler.ChangePassword)
 		}
 
 		accounts := v1.Group("/accounts")
@@ -122,6 +123,7 @@ func main() {
 			accounts.GET("/:id/balance", accountHandler.GetBalance)
 			accounts.POST("/:id/transfers", transactionHandler.Transfer)
 			accounts.POST("/:id/deposits", transactionHandler.Deposit)
+			accounts.POST("/:id/withdrawals", transactionHandler.Withdraw)
 			accounts.GET("/:id/transactions", transactionHandler.GetTransactionHistory)
 			accounts.GET("/:id/statement", transactionHandler.GetStatement)
 		}

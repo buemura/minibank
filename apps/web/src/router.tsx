@@ -4,7 +4,9 @@ import RegisterPage from '@/routes/register'
 import DashboardPage from '@/routes/dashboard'
 import TransferPage from '@/routes/transfer'
 import DepositPage from '@/routes/deposit'
+import WithdrawalPage from '@/routes/withdrawal'
 import StatementPage from '@/routes/statement'
+import SettingsPage from '@/routes/settings'
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -82,6 +84,18 @@ const depositRoute = createRoute({
   component: DepositPage,
 })
 
+const withdrawalRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/withdrawal',
+  beforeLoad: () => {
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      throw redirect({ to: '/login' })
+    }
+  },
+  component: WithdrawalPage,
+})
+
 const statementRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/statement',
@@ -94,6 +108,18 @@ const statementRoute = createRoute({
   component: StatementPage,
 })
 
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings',
+  beforeLoad: () => {
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      throw redirect({ to: '/login' })
+    }
+  },
+  component: SettingsPage,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -101,7 +127,9 @@ const routeTree = rootRoute.addChildren([
   dashboardRoute,
   transferRoute,
   depositRoute,
+  withdrawalRoute,
   statementRoute,
+  settingsRoute,
 ])
 
 export const router = createRouter({ routeTree })

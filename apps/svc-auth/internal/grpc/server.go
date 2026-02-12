@@ -158,6 +158,36 @@ func (s *AuthServer) GetUserProfile(ctx context.Context, req *pb.GetUserProfileR
 	}, nil
 }
 
+func (s *AuthServer) ChangePassword(ctx context.Context, req *pb.ChangePasswordRequest) (*pb.ChangePasswordResponse, error) {
+	logger.Info("ChangePassword request received", zap.String("user_id", req.UserId))
+
+	err := s.authService.ChangePassword(ctx, service.ChangePasswordInput{
+		UserID:          req.UserId,
+		CurrentPassword: req.CurrentPassword,
+		NewPassword:     req.NewPassword,
+	})
+
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrUserNotFound):
+			logger.Warn("ChangePassword: user not found", zap.String("user_id", req.UserId))
+			return nil, status.Error(codes.NotFound, "user not found")
+		case errors.Is(err, service.ErrInvalidCurrentPassword):
+			logger.Warn("ChangePassword: invalid current password", zap.String("user_id", req.UserId))
+			return nil, status.Error(codes.InvalidArgument, "current password is incorrect")
+		case errors.Is(err, service.ErrPasswordTooShort):
+			logger.Warn("ChangePassword: new password too short", zap.String("user_id", req.UserId))
+			return nil, status.Error(codes.InvalidArgument, "new password must be at least 8 characters")
+		default:
+			logger.Error("ChangePassword failed", zap.String("user_id", req.UserId), zap.Error(err))
+			return nil, status.Error(codes.Internal, "failed to change password")
+		}
+	}
+
+	logger.Info("ChangePassword successful", zap.String("user_id", req.UserId))
+	return &pb.ChangePasswordResponse{Success: true}, nil
+}
+
 func domainUserToProto(user *domain.User) *pb.User {
 	return &pb.User{
 		Id:        user.ID,

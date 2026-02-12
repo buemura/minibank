@@ -16,6 +16,7 @@ export default function Navbar() {
     { to: "/dashboard" as const, label: "Dashboard" },
     { to: "/transfer" as const, label: "Transfer" },
     { to: "/statement" as const, label: "Statement" },
+    { to: "/settings" as const, label: "Settings" },
   ];
 
   return (

@@ -32,6 +32,12 @@ type DepositRequest struct {
 	Description    string `json:"description"`
 }
 
+type WithdrawRequest struct {
+	IdempotencyKey string `json:"idempotency_key" binding:"required"`
+	Amount         string `json:"amount" binding:"required"`
+	Description    string `json:"description"`
+}
+
 func (h *TransactionHandler) Transfer(c *gin.Context) {
 	accountID := c.Param("id")
 
@@ -87,6 +93,42 @@ func (h *TransactionHandler) Deposit(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Deposit failed"})
+		return
+	}
+
+	if !resp.Success {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":       false,
+			"error_code":    resp.ErrorCode,
+			"error_message": resp.ErrorMessage,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":     true,
+		"transaction": mapProtoTransactionToResponse(resp.Transaction),
+	})
+}
+
+func (h *TransactionHandler) Withdraw(c *gin.Context) {
+	accountID := c.Param("id")
+
+	var req WithdrawRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	resp, err := h.transactionClient.Withdraw(c.Request.Context(), &transactionpb.WithdrawRequest{
+		IdempotencyKey: req.IdempotencyKey,
+		AccountId:      accountID,
+		Amount:         req.Amount,
+		Description:    req.Description,
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Withdrawal failed"})
 		return
 	}
 

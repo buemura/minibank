@@ -71,6 +71,20 @@ type DepositResult struct {
 	ErrorMessage string
 }
 
+type WithdrawInput struct {
+	IdempotencyKey string
+	AccountID      string
+	Amount         string
+	Description    string
+}
+
+type WithdrawResult struct {
+	Success      bool
+	Transaction  *domain.Transaction
+	ErrorCode    string
+	ErrorMessage string
+}
+
 func (s *TransactionService) Transfer(ctx context.Context, input TransferInput) (*TransferResult, error) {
 	amount, err := decimal.NewFromString(input.Amount)
 	if err != nil || amount.LessThanOrEqual(decimal.Zero) {
@@ -295,6 +309,122 @@ func (s *TransactionService) failDeposit(ctx context.Context, idempotencyKey, er
 	responseBody, _ := json.Marshal(result)
 	_ = s.idempotencyRepo.UpdateResponse(ctx, idempotencyKey, 400, responseBody, "")
 	return result, nil
+}
+
+func (s *TransactionService) Withdraw(ctx context.Context, input WithdrawInput) (*WithdrawResult, error) {
+	amount, err := decimal.NewFromString(input.Amount)
+	if err != nil || amount.LessThanOrEqual(decimal.Zero) {
+		return &WithdrawResult{
+			Success:      false,
+			ErrorCode:    "INVALID_AMOUNT",
+			ErrorMessage: "Invalid withdrawal amount",
+		}, nil
+	}
+
+	requestHash := s.calculateWithdrawRequestHash(input)
+
+	existing, err := s.idempotencyRepo.GetByKey(ctx, input.IdempotencyKey)
+	if err != nil {
+		return nil, err
+	}
+
+	if existing != nil {
+		if existing.RequestHash != requestHash {
+			return &WithdrawResult{
+				Success:      false,
+				ErrorCode:    "IDEMPOTENCY_MISMATCH",
+				ErrorMessage: "Idempotency key already used with different parameters",
+			}, nil
+		}
+
+		if existing.TransactionID != "" {
+			tx, err := s.transactionRepo.GetByID(ctx, existing.TransactionID)
+			if err != nil {
+				return nil, err
+			}
+			return &WithdrawResult{
+				Success:     tx.Status == domain.TransactionStatusCompleted,
+				Transaction: tx,
+			}, nil
+		}
+	}
+
+	idemKey := &domain.IdempotencyKey{
+		Key:            input.IdempotencyKey,
+		RequestHash:    requestHash,
+		ResponseStatus: 0,
+		ExpiresAt:      time.Now().Add(24 * time.Hour),
+	}
+
+	if existing == nil {
+		if err := s.idempotencyRepo.Create(ctx, idemKey); err != nil {
+			return nil, err
+		}
+	}
+
+	txID := uuid.New().String()
+
+	debitResp, err := s.accountClient.DebitAccount(ctx, &accountpb.DebitAccountRequest{
+		AccountId:     input.AccountID,
+		Amount:        input.Amount,
+		TransactionId: txID,
+	})
+	if err != nil {
+		return s.failWithdraw(ctx, input.IdempotencyKey, "WITHDRAWAL_FAILED", "gRPC error: "+err.Error())
+	}
+	if !debitResp.Success {
+		errMsg := "Account service returned failure"
+		if debitResp.ErrorMessage != "" {
+			errMsg = debitResp.ErrorMessage
+		}
+		return s.failWithdraw(ctx, input.IdempotencyKey, "WITHDRAWAL_FAILED", errMsg)
+	}
+
+	now := time.Now()
+	transaction := &domain.Transaction{
+		IdempotencyKey:  input.IdempotencyKey,
+		Type:            domain.TransactionTypeWithdrawal,
+		Status:          domain.TransactionStatusCompleted,
+		SourceAccountID: input.AccountID,
+		Amount:          amount,
+		Currency:        "BRL",
+		Description:     input.Description,
+		ProcessedAt:     &now,
+	}
+
+	if err := s.transactionRepo.Create(ctx, transaction); err != nil {
+		return nil, err
+	}
+
+	responseBody, _ := json.Marshal(WithdrawResult{Success: true, Transaction: transaction})
+	_ = s.idempotencyRepo.UpdateResponse(ctx, input.IdempotencyKey, 200, responseBody, transaction.ID)
+
+	return &WithdrawResult{
+		Success:     true,
+		Transaction: transaction,
+	}, nil
+}
+
+func (s *TransactionService) failWithdraw(ctx context.Context, idempotencyKey, errorCode, errorMessage string) (*WithdrawResult, error) {
+	result := &WithdrawResult{
+		Success:      false,
+		ErrorCode:    errorCode,
+		ErrorMessage: errorMessage,
+	}
+	responseBody, _ := json.Marshal(result)
+	_ = s.idempotencyRepo.UpdateResponse(ctx, idempotencyKey, 400, responseBody, "")
+	return result, nil
+}
+
+func (s *TransactionService) calculateWithdrawRequestHash(input WithdrawInput) string {
+	data := map[string]string{
+		"account_id":  input.AccountID,
+		"amount":      input.Amount,
+		"description": input.Description,
+	}
+	jsonData, _ := json.Marshal(data)
+	hash := sha256.Sum256(jsonData)
+	return hex.EncodeToString(hash[:])
 }
 
 func (s *TransactionService) calculateDepositRequestHash(input DepositInput) string {

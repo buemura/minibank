@@ -85,6 +85,19 @@ export interface DepositResponse {
   error_message?: string
 }
 
+export interface WithdrawalRequest {
+  idempotency_key: string
+  amount: string
+  description?: string
+}
+
+export interface WithdrawalResponse {
+  success: boolean
+  transaction?: Transaction
+  error_code?: string
+  error_message?: string
+}
+
 export interface StatementResponse {
   account_id: string
   opening_balance: string
@@ -99,6 +112,11 @@ export interface AccountLookup {
   account_number: string
   agency: string
   owner_name: string
+}
+
+export interface ChangePasswordRequest {
+  current_password: string
+  new_password: string
 }
 
 export interface ApiError {

@@ -125,3 +125,26 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
 
 	return err
 }
+
+func (r *userRepository) UpdatePassword(ctx context.Context, userID string, passwordHash string) error {
+	logger.Debug("userRepository.UpdatePassword: updating password hash", zap.String("user_id", userID))
+
+	query := `
+		UPDATE users
+		SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $2
+	`
+
+	result, err := r.db.Exec(ctx, query, passwordHash, userID)
+	if err != nil {
+		logger.Error("userRepository.UpdatePassword: failed to update password", zap.String("user_id", userID), zap.Error(err))
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		logger.Warn("userRepository.UpdatePassword: no rows affected", zap.String("user_id", userID))
+		return pgx.ErrNoRows
+	}
+
+	return nil
+}

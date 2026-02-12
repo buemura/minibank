@@ -28,6 +28,14 @@ func (m *MockTransactionServiceClient) Deposit(ctx context.Context, in *transact
 	return args.Get(0).(*transactionpb.DepositResponse), args.Error(1)
 }
 
+func (m *MockTransactionServiceClient) Withdraw(ctx context.Context, in *transactionpb.WithdrawRequest, opts ...grpc.CallOption) (*transactionpb.WithdrawResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*transactionpb.WithdrawResponse), args.Error(1)
+}
+
 func (m *MockTransactionServiceClient) GetTransaction(ctx context.Context, in *transactionpb.GetTransactionRequest, opts ...grpc.CallOption) (*transactionpb.GetTransactionResponse, error) {
 	args := m.Called(ctx, in)
 	if args.Get(0) == nil {

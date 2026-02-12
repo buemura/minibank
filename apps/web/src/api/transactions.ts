@@ -1,5 +1,5 @@
 import client from './client'
-import type { Transaction, TransferRequest, TransferResponse, DepositRequest, DepositResponse, StatementResponse } from '@/types'
+import type { Transaction, TransferRequest, TransferResponse, DepositRequest, DepositResponse, WithdrawalRequest, WithdrawalResponse, StatementResponse } from '@/types'
 
 export const transactionsApi = {
   async transfer(accountId: string, request: TransferRequest): Promise<TransferResponse> {
@@ -9,6 +9,11 @@ export const transactionsApi = {
 
   async deposit(accountId: string, request: DepositRequest): Promise<DepositResponse> {
     const { data } = await client.post<DepositResponse>(`/accounts/${accountId}/deposits`, request)
+    return data
+  },
+
+  async withdrawal(accountId: string, request: WithdrawalRequest): Promise<WithdrawalResponse> {
+    const { data } = await client.post<WithdrawalResponse>(`/accounts/${accountId}/withdrawals`, request)
     return data
   },
 

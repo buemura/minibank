@@ -83,7 +83,7 @@ export default function DashboardPage() {
             <div className="lg:col-span-1">
               <BalanceDisplay account={primaryAccount} />
 
-              <div className="mt-6 grid grid-cols-3 gap-4">
+              <div className="mt-6 grid grid-cols-2 gap-4">
                 <Link to="/transfer">
                   <Button variant="primary" className="w-full">
                     Transfer
@@ -92,6 +92,11 @@ export default function DashboardPage() {
                 <Link to="/deposit">
                   <Button variant="primary" className="w-full">
                     Deposit
+                  </Button>
+                </Link>
+                <Link to="/withdrawal">
+                  <Button variant="primary" className="w-full">
+                    Withdraw
                   </Button>
                 </Link>
                 <Link to="/statement">

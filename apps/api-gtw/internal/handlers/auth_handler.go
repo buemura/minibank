@@ -5,6 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
 
 	authpb "github.com/buemura/minibank/api-gtw/proto/auth/v1"
 	"github.com/buemura/minibank/packages/logger"
@@ -155,6 +157,49 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, mapProtoUserToResponse(resp.User))
+}
+
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password" binding:"required"`
+	NewPassword     string `json:"new_password" binding:"required,min=8"`
+}
+
+func (h *AuthHandler) ChangePassword(c *gin.Context) {
+	var req ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Warn("ChangePassword: invalid request body", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID := c.GetString("user_id")
+	logger.Info("ChangePassword request received", zap.String("user_id", userID))
+
+	resp, err := h.authClient.ChangePassword(c.Request.Context(), &authpb.ChangePasswordRequest{
+		UserId:          userID,
+		CurrentPassword: req.CurrentPassword,
+		NewPassword:     req.NewPassword,
+	})
+
+	if err != nil {
+		logger.Error("ChangePassword: gRPC call failed", zap.String("user_id", userID), zap.Error(err))
+		st, ok := grpcstatus.FromError(err)
+		if ok {
+			switch st.Code() {
+			case codes.InvalidArgument:
+				c.JSON(http.StatusBadRequest, gin.H{"error": st.Message()})
+				return
+			case codes.NotFound:
+				c.JSON(http.StatusNotFound, gin.H{"error": st.Message()})
+				return
+			}
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to change password"})
+		return
+	}
+
+	logger.Info("ChangePassword successful", zap.String("user_id", userID))
+	c.JSON(http.StatusOK, gin.H{"success": resp.Success, "message": "Password changed successfully"})
 }
 
 func mapProtoUserToResponse(user *authpb.User) map[string]interface{} {

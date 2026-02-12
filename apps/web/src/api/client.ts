@@ -24,7 +24,9 @@ client.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config
 
-    if (error.response?.status === 401 && originalRequest && !originalRequest.headers['X-Retry']) {
+    const isAuthEndpoint = originalRequest?.url?.startsWith('/auth/')
+
+    if (error.response?.status === 401 && originalRequest && !originalRequest.headers['X-Retry'] && !isAuthEndpoint) {
       originalRequest.headers['X-Retry'] = 'true'
 
       const refreshToken = localStorage.getItem('refresh_token')

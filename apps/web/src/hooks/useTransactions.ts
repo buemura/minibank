@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionsApi } from '@/api/transactions'
-import type { TransferRequest, DepositRequest } from '@/types'
+import type { TransferRequest, DepositRequest, WithdrawalRequest } from '@/types'
 
 export function useTransactionHistory(accountId: string | undefined, page: number = 1, pageSize: number = 20) {
   return useQuery({
@@ -38,6 +38,20 @@ export function useDeposit() {
   return useMutation({
     mutationFn: ({ accountId, request }: { accountId: string; request: DepositRequest }) =>
       transactionsApi.deposit(accountId, request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['statement'] })
+    },
+  })
+}
+
+export function useWithdrawal() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ accountId, request }: { accountId: string; request: WithdrawalRequest }) =>
+      transactionsApi.withdrawal(accountId, request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })

@@ -92,6 +92,39 @@ func (s *TransactionServer) Deposit(ctx context.Context, req *pb.DepositRequest)
 	return resp, nil
 }
 
+func (s *TransactionServer) Withdraw(ctx context.Context, req *pb.WithdrawRequest) (*pb.WithdrawResponse, error) {
+	logger.Info("Withdraw request received",
+		zap.String("idempotency_key", req.IdempotencyKey),
+		zap.String("account_id", req.AccountId),
+		zap.String("amount", req.Amount))
+
+	result, err := s.transactionService.Withdraw(ctx, service.WithdrawInput{
+		IdempotencyKey: req.IdempotencyKey,
+		AccountID:      req.AccountId,
+		Amount:         req.Amount,
+		Description:    req.Description,
+	})
+	if err != nil {
+		logger.Error("Withdraw failed", zap.String("idempotency_key", req.IdempotencyKey), zap.Error(err))
+		return nil, status.Error(codes.Internal, "withdrawal failed")
+	}
+
+	resp := &pb.WithdrawResponse{
+		Success:      result.Success,
+		ErrorCode:    result.ErrorCode,
+		ErrorMessage: result.ErrorMessage,
+	}
+
+	if result.Transaction != nil {
+		resp.Transaction = domainTransactionToProto(result.Transaction)
+		logger.Info("Withdraw completed", zap.String("transaction_id", result.Transaction.ID), zap.Bool("success", result.Success))
+	} else if !result.Success {
+		logger.Warn("Withdraw not successful", zap.String("error_code", result.ErrorCode), zap.String("error_message", result.ErrorMessage))
+	}
+
+	return resp, nil
+}
+
 func (s *TransactionServer) GetTransaction(ctx context.Context, req *pb.GetTransactionRequest) (*pb.GetTransactionResponse, error) {
 	logger.Debug("GetTransaction request received", zap.String("transaction_id", req.TransactionId))
 

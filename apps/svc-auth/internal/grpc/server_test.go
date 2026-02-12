@@ -275,3 +275,70 @@ func TestGetUserProfile_gRPC_NotFound(t *testing.T) {
 	assert.Equal(t, codes.NotFound, st.Code())
 	userRepo.AssertExpectations(t)
 }
+
+func TestChangePassword_gRPC_Success(t *testing.T) {
+	server, userRepo, refreshRepo := newTestServer()
+
+	user := newActiveUser("user-1", "test@example.com")
+	userRepo.On("GetByID", mock.Anything, "user-1").Return(user, nil)
+	userRepo.On("UpdatePassword", mock.Anything, "user-1", mock.AnythingOfType("string")).Return(nil)
+	refreshRepo.On("RevokeByUserID", mock.Anything, "user-1").Return(nil)
+
+	resp, err := server.ChangePassword(context.Background(), &pb.ChangePasswordRequest{
+		UserId:          "user-1",
+		CurrentPassword: "password123",
+		NewPassword:     "newpassword456",
+	})
+
+	require.NoError(t, err)
+	assert.True(t, resp.Success)
+	userRepo.AssertExpectations(t)
+	refreshRepo.AssertExpectations(t)
+}
+
+func TestChangePassword_gRPC_InvalidCurrentPassword(t *testing.T) {
+	server, userRepo, _ := newTestServer()
+
+	user := newActiveUser("user-1", "test@example.com")
+	userRepo.On("GetByID", mock.Anything, "user-1").Return(user, nil)
+
+	_, err := server.ChangePassword(context.Background(), &pb.ChangePasswordRequest{
+		UserId:          "user-1",
+		CurrentPassword: "wrong-password",
+		NewPassword:     "newpassword456",
+	})
+
+	st, _ := status.FromError(err)
+	assert.Equal(t, codes.InvalidArgument, st.Code())
+	assert.Contains(t, st.Message(), "current password is incorrect")
+	userRepo.AssertExpectations(t)
+}
+
+func TestChangePassword_gRPC_PasswordTooShort(t *testing.T) {
+	server, _, _ := newTestServer()
+
+	_, err := server.ChangePassword(context.Background(), &pb.ChangePasswordRequest{
+		UserId:          "user-1",
+		CurrentPassword: "password123",
+		NewPassword:     "short",
+	})
+
+	st, _ := status.FromError(err)
+	assert.Equal(t, codes.InvalidArgument, st.Code())
+}
+
+func TestChangePassword_gRPC_UserNotFound(t *testing.T) {
+	server, userRepo, _ := newTestServer()
+
+	userRepo.On("GetByID", mock.Anything, "user-1").Return(nil, nil)
+
+	_, err := server.ChangePassword(context.Background(), &pb.ChangePasswordRequest{
+		UserId:          "user-1",
+		CurrentPassword: "password123",
+		NewPassword:     "newpassword456",
+	})
+
+	st, _ := status.FromError(err)
+	assert.Equal(t, codes.NotFound, st.Code())
+	userRepo.AssertExpectations(t)
+}

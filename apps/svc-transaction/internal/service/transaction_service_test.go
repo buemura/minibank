@@ -46,6 +46,15 @@ func defaultDepositInput() DepositInput {
 	}
 }
 
+func defaultWithdrawInput() WithdrawInput {
+	return WithdrawInput{
+		IdempotencyKey: "idem-key-3",
+		AccountID:      "acc-1",
+		Amount:         "200.00",
+		Description:    "Test withdrawal",
+	}
+}
+
 // --- Transfer Tests ---
 
 func TestTransfer_Success(t *testing.T) {
@@ -534,6 +543,143 @@ func calculateTransferRequestHash(input TransferInput) string {
 }
 
 func calculateDepositRequestHash(input DepositInput) string {
+	data := map[string]string{
+		"account_id":  input.AccountID,
+		"amount":      input.Amount,
+		"description": input.Description,
+	}
+	jsonData, _ := json.Marshal(data)
+	hash := sha256.Sum256(jsonData)
+	return hex.EncodeToString(hash[:])
+}
+
+// --- Withdraw Tests ---
+
+func TestWithdraw_Success(t *testing.T) {
+	svc, txRepo, idemRepo, accountClient := newTestService()
+	input := defaultWithdrawInput()
+
+	idemRepo.On("GetByKey", mock.Anything, input.IdempotencyKey).Return(nil, nil)
+	idemRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+	idemRepo.On("UpdateResponse", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	accountClient.On("DebitAccount", mock.Anything, mock.Anything).Return(&accountpb.DebitAccountResponse{
+		Success:    true,
+		NewBalance: "800.00",
+	}, nil)
+
+	txRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+
+	result, err := svc.Withdraw(context.Background(), input)
+
+	require.NoError(t, err)
+	assert.True(t, result.Success)
+	assert.NotNil(t, result.Transaction)
+	assert.Equal(t, domain.TransactionTypeWithdrawal, result.Transaction.Type)
+	assert.Equal(t, domain.TransactionStatusCompleted, result.Transaction.Status)
+	assert.True(t, result.Transaction.Amount.Equal(decimal.RequireFromString("200.00")))
+	assert.Equal(t, input.AccountID, result.Transaction.SourceAccountID)
+	txRepo.AssertExpectations(t)
+	idemRepo.AssertExpectations(t)
+	accountClient.AssertExpectations(t)
+}
+
+func TestWithdraw_InvalidAmount(t *testing.T) {
+	svc, _, _, _ := newTestService()
+	input := defaultWithdrawInput()
+	input.Amount = "0"
+
+	result, err := svc.Withdraw(context.Background(), input)
+
+	require.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Equal(t, "INVALID_AMOUNT", result.ErrorCode)
+}
+
+func TestWithdraw_IdempotencyMismatch(t *testing.T) {
+	svc, _, idemRepo, _ := newTestService()
+	input := defaultWithdrawInput()
+
+	idemRepo.On("GetByKey", mock.Anything, input.IdempotencyKey).Return(&domain.IdempotencyKey{
+		Key:         input.IdempotencyKey,
+		RequestHash: "different-hash",
+	}, nil)
+
+	result, err := svc.Withdraw(context.Background(), input)
+
+	require.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Equal(t, "IDEMPOTENCY_MISMATCH", result.ErrorCode)
+	idemRepo.AssertExpectations(t)
+}
+
+func TestWithdraw_IdempotencyReplay(t *testing.T) {
+	svc, txRepo, idemRepo, _ := newTestService()
+	input := defaultWithdrawInput()
+
+	requestHash := calculateWithdrawRequestHash(input)
+	existingTx := &domain.Transaction{
+		ID:     "tx-1",
+		Status: domain.TransactionStatusCompleted,
+	}
+
+	idemRepo.On("GetByKey", mock.Anything, input.IdempotencyKey).Return(&domain.IdempotencyKey{
+		Key:           input.IdempotencyKey,
+		RequestHash:   requestHash,
+		TransactionID: "tx-1",
+	}, nil)
+	txRepo.On("GetByID", mock.Anything, "tx-1").Return(existingTx, nil)
+
+	result, err := svc.Withdraw(context.Background(), input)
+
+	require.NoError(t, err)
+	assert.True(t, result.Success)
+	assert.Equal(t, "tx-1", result.Transaction.ID)
+	idemRepo.AssertExpectations(t)
+	txRepo.AssertExpectations(t)
+}
+
+func TestWithdraw_DebitFails_gRPCError(t *testing.T) {
+	svc, _, idemRepo, accountClient := newTestService()
+	input := defaultWithdrawInput()
+
+	idemRepo.On("GetByKey", mock.Anything, input.IdempotencyKey).Return(nil, nil)
+	idemRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+	idemRepo.On("UpdateResponse", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	accountClient.On("DebitAccount", mock.Anything, mock.Anything).Return(nil, errors.New("gRPC error"))
+
+	result, err := svc.Withdraw(context.Background(), input)
+
+	require.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Equal(t, "WITHDRAWAL_FAILED", result.ErrorCode)
+	accountClient.AssertExpectations(t)
+}
+
+func TestWithdraw_DebitFails_NotSuccess(t *testing.T) {
+	svc, _, idemRepo, accountClient := newTestService()
+	input := defaultWithdrawInput()
+
+	idemRepo.On("GetByKey", mock.Anything, input.IdempotencyKey).Return(nil, nil)
+	idemRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+	idemRepo.On("UpdateResponse", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	accountClient.On("DebitAccount", mock.Anything, mock.Anything).Return(&accountpb.DebitAccountResponse{
+		Success:      false,
+		ErrorMessage: "insufficient funds",
+	}, nil)
+
+	result, err := svc.Withdraw(context.Background(), input)
+
+	require.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Equal(t, "WITHDRAWAL_FAILED", result.ErrorCode)
+	assert.Equal(t, "insufficient funds", result.ErrorMessage)
+	accountClient.AssertExpectations(t)
+}
+
+func calculateWithdrawRequestHash(input WithdrawInput) string {
 	data := map[string]string{
 		"account_id":  input.AccountID,
 		"amount":      input.Amount,

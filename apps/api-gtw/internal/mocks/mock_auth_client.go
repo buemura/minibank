@@ -59,3 +59,11 @@ func (m *MockAuthServiceClient) GetUserProfile(ctx context.Context, in *authpb.G
 	}
 	return args.Get(0).(*authpb.GetUserProfileResponse), args.Error(1)
 }
+
+func (m *MockAuthServiceClient) ChangePassword(ctx context.Context, in *authpb.ChangePasswordRequest, opts ...grpc.CallOption) (*authpb.ChangePasswordResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*authpb.ChangePasswordResponse), args.Error(1)
+}

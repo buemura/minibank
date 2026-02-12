@@ -165,6 +165,44 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/v1/auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Change user password
+      description: Change the authenticated user's password. Requires the current password for verification. All refresh tokens are revoked after a successful change.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Password changed successfully
+        "400":
+          description: Invalid request (wrong current password or new password too short)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/v1/accounts:
     get:
       tags: [Accounts]
@@ -309,6 +347,38 @@ paths:
                 $ref: "#/components/schemas/TransactionSuccessResponse"
         "400":
           description: Deposit failed (validation or business rule)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/accounts/{id}/withdrawals:
+    post:
+      tags: [Transactions]
+      summary: Create a withdrawal
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawRequest"
+      responses:
+        "200":
+          description: Withdrawal successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionSuccessResponse"
+        "400":
+          description: Withdrawal failed (validation or business rule)
           content:
             application/json:
               schema:
@@ -491,6 +561,18 @@ components:
         refresh_token:
           type: string
 
+    ChangePasswordRequest:
+      type: object
+      required: [current_password, new_password]
+      properties:
+        current_password:
+          type: string
+          example: "oldpassword123"
+        new_password:
+          type: string
+          minLength: 8
+          example: "newsecurepass456"
+
     User:
       type: object
       properties:
@@ -605,6 +687,20 @@ components:
         description:
           type: string
           example: "Salary deposit"
+
+    WithdrawRequest:
+      type: object
+      required: [idempotency_key, amount]
+      properties:
+        idempotency_key:
+          type: string
+          example: "wdr-uuid-789"
+        amount:
+          type: string
+          example: "200.00"
+        description:
+          type: string
+          example: "ATM withdrawal"
 
     Transaction:
       type: object

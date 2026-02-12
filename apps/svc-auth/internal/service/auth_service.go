@@ -17,12 +17,14 @@ import (
 )
 
 var (
-	ErrUserNotFound       = errors.New("user not found")
-	ErrUserAlreadyExists  = errors.New("user already exists")
-	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrInvalidToken       = errors.New("invalid token")
-	ErrTokenExpired       = errors.New("token expired")
-	ErrTokenRevoked       = errors.New("token revoked")
+	ErrUserNotFound           = errors.New("user not found")
+	ErrUserAlreadyExists      = errors.New("user already exists")
+	ErrInvalidCredentials     = errors.New("invalid credentials")
+	ErrInvalidToken           = errors.New("invalid token")
+	ErrTokenExpired           = errors.New("token expired")
+	ErrTokenRevoked           = errors.New("token revoked")
+	ErrInvalidCurrentPassword = errors.New("invalid current password")
+	ErrPasswordTooShort       = errors.New("password must be at least 8 characters")
 )
 
 type AuthService struct {
@@ -196,6 +198,52 @@ func (s *AuthService) GetUserByID(ctx context.Context, userID string) (*domain.U
 		return nil, ErrUserNotFound
 	}
 	return user, nil
+}
+
+type ChangePasswordInput struct {
+	UserID          string
+	CurrentPassword string
+	NewPassword     string
+}
+
+func (s *AuthService) ChangePassword(ctx context.Context, input ChangePasswordInput) error {
+	logger.Debug("AuthService.ChangePassword: starting", zap.String("user_id", input.UserID))
+
+	if len(input.NewPassword) < 8 {
+		return ErrPasswordTooShort
+	}
+
+	user, err := s.userRepo.GetByID(ctx, input.UserID)
+	if err != nil {
+		logger.Error("AuthService.ChangePassword: failed to get user", zap.String("user_id", input.UserID), zap.Error(err))
+		return err
+	}
+	if user == nil {
+		return ErrUserNotFound
+	}
+
+	if !password.Verify(input.CurrentPassword, user.PasswordHash) {
+		logger.Debug("AuthService.ChangePassword: current password incorrect", zap.String("user_id", input.UserID))
+		return ErrInvalidCurrentPassword
+	}
+
+	hashedPassword, err := password.Hash(input.NewPassword)
+	if err != nil {
+		logger.Error("AuthService.ChangePassword: failed to hash new password", zap.Error(err))
+		return err
+	}
+
+	if err := s.userRepo.UpdatePassword(ctx, input.UserID, hashedPassword); err != nil {
+		logger.Error("AuthService.ChangePassword: failed to update password", zap.String("user_id", input.UserID), zap.Error(err))
+		return err
+	}
+
+	if err := s.refreshTokenRepo.RevokeByUserID(ctx, input.UserID); err != nil {
+		logger.Error("AuthService.ChangePassword: failed to revoke refresh tokens", zap.String("user_id", input.UserID), zap.Error(err))
+	}
+
+	logger.Info("AuthService.ChangePassword: password changed successfully", zap.String("user_id", input.UserID))
+	return nil
 }
 
 func (s *AuthService) generateTokens(ctx context.Context, user *domain.User) (*AuthResult, error) {

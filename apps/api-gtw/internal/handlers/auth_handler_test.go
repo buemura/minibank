@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -309,5 +311,76 @@ func TestMe_Failure(t *testing.T) {
 	handler.Me(c)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	authClient.AssertExpectations(t)
+}
+
+func TestChangePassword_Success(t *testing.T) {
+	authClient := new(mocks.MockAuthServiceClient)
+	handler := NewAuthHandler(authClient)
+
+	authClient.On("ChangePassword", mock.Anything, mock.Anything).Return(&authpb.ChangePasswordResponse{
+		Success: true,
+	}, nil)
+
+	body, _ := json.Marshal(map[string]string{
+		"current_password": "oldpassword123",
+		"new_password":     "newpassword456",
+	})
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/auth/change-password", bytes.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Set("user_id", "user-1")
+
+	handler.ChangePassword(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, true, resp["success"])
+	authClient.AssertExpectations(t)
+}
+
+func TestChangePassword_InvalidBody(t *testing.T) {
+	authClient := new(mocks.MockAuthServiceClient)
+	handler := NewAuthHandler(authClient)
+
+	body, _ := json.Marshal(map[string]string{
+		"current_password": "old",
+	})
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/auth/change-password", bytes.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Set("user_id", "user-1")
+
+	handler.ChangePassword(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestChangePassword_gRPCError(t *testing.T) {
+	authClient := new(mocks.MockAuthServiceClient)
+	handler := NewAuthHandler(authClient)
+
+	authClient.On("ChangePassword", mock.Anything, mock.Anything).Return(nil, status.Error(codes.InvalidArgument, "current password is incorrect"))
+
+	body, _ := json.Marshal(map[string]string{
+		"current_password": "wrongpassword1",
+		"new_password":     "newpassword456",
+	})
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/auth/change-password", bytes.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Set("user_id", "user-1")
+
+	handler.ChangePassword(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 	authClient.AssertExpectations(t)
 }

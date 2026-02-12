@@ -340,6 +340,85 @@ func TestGetUserByID_NotFound(t *testing.T) {
 	userRepo.AssertExpectations(t)
 }
 
+func TestChangePassword_Success(t *testing.T) {
+	svc, userRepo, refreshRepo := newTestAuthService()
+
+	user := newActiveUser("user-1", "test@example.com")
+	userRepo.On("GetByID", mock.Anything, "user-1").Return(user, nil)
+	userRepo.On("UpdatePassword", mock.Anything, "user-1", mock.AnythingOfType("string")).Return(nil)
+	refreshRepo.On("RevokeByUserID", mock.Anything, "user-1").Return(nil)
+
+	err := svc.ChangePassword(context.Background(), ChangePasswordInput{
+		UserID:          "user-1",
+		CurrentPassword: "password123",
+		NewPassword:     "newpassword456",
+	})
+
+	assert.NoError(t, err)
+	userRepo.AssertExpectations(t)
+	refreshRepo.AssertExpectations(t)
+}
+
+func TestChangePassword_UserNotFound(t *testing.T) {
+	svc, userRepo, _ := newTestAuthService()
+
+	userRepo.On("GetByID", mock.Anything, "user-1").Return(nil, nil)
+
+	err := svc.ChangePassword(context.Background(), ChangePasswordInput{
+		UserID:          "user-1",
+		CurrentPassword: "password123",
+		NewPassword:     "newpassword456",
+	})
+
+	assert.ErrorIs(t, err, ErrUserNotFound)
+	userRepo.AssertExpectations(t)
+}
+
+func TestChangePassword_WrongCurrentPassword(t *testing.T) {
+	svc, userRepo, _ := newTestAuthService()
+
+	user := newActiveUser("user-1", "test@example.com")
+	userRepo.On("GetByID", mock.Anything, "user-1").Return(user, nil)
+
+	err := svc.ChangePassword(context.Background(), ChangePasswordInput{
+		UserID:          "user-1",
+		CurrentPassword: "wrong-password",
+		NewPassword:     "newpassword456",
+	})
+
+	assert.ErrorIs(t, err, ErrInvalidCurrentPassword)
+	userRepo.AssertExpectations(t)
+}
+
+func TestChangePassword_NewPasswordTooShort(t *testing.T) {
+	svc, _, _ := newTestAuthService()
+
+	err := svc.ChangePassword(context.Background(), ChangePasswordInput{
+		UserID:          "user-1",
+		CurrentPassword: "password123",
+		NewPassword:     "short",
+	})
+
+	assert.ErrorIs(t, err, ErrPasswordTooShort)
+}
+
+func TestChangePassword_UpdatePasswordError(t *testing.T) {
+	svc, userRepo, _ := newTestAuthService()
+
+	user := newActiveUser("user-1", "test@example.com")
+	userRepo.On("GetByID", mock.Anything, "user-1").Return(user, nil)
+	userRepo.On("UpdatePassword", mock.Anything, "user-1", mock.AnythingOfType("string")).Return(errors.New("db error"))
+
+	err := svc.ChangePassword(context.Background(), ChangePasswordInput{
+		UserID:          "user-1",
+		CurrentPassword: "password123",
+		NewPassword:     "newpassword456",
+	})
+
+	assert.EqualError(t, err, "db error")
+	userRepo.AssertExpectations(t)
+}
+
 func sha256Hash(s string) string {
 	hash := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(hash[:])
