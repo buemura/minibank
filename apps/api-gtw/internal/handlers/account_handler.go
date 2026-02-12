@@ -48,7 +48,7 @@ func (h *AccountHandler) CreateAccount(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create account"})
+		handleGRPCError(c, err, http.StatusInternalServerError, "Failed to create account")
 		return
 	}
 
@@ -65,7 +65,7 @@ func (h *AccountHandler) GetAccounts(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get accounts"})
+		handleGRPCError(c, err, http.StatusInternalServerError, "Failed to get accounts")
 		return
 	}
 
@@ -94,7 +94,7 @@ func (h *AccountHandler) GetAccount(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Account not found"})
+		handleGRPCError(c, err, http.StatusNotFound, "Account not found")
 		return
 	}
 
@@ -113,7 +113,7 @@ func (h *AccountHandler) GetBalance(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Account not found"})
+		handleGRPCError(c, err, http.StatusNotFound, "Account not found")
 		return
 	}
 
@@ -126,7 +126,7 @@ func (h *AccountHandler) GetBalance(c *gin.Context) {
 func (h *AccountHandler) LookupAccountByNumber(c *gin.Context) {
 	accountNumber := c.Query("account_number")
 	if accountNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "account_number query parameter is required"})
+		errorResponse(c, http.StatusBadRequest, "INVALID_ARGUMENT", "account_number query parameter is required")
 		return
 	}
 
@@ -142,7 +142,7 @@ func (h *AccountHandler) LookupAccountByNumber(c *gin.Context) {
 		AccountNumber: accountNumber,
 	})
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Account not found"})
+		handleGRPCError(c, err, http.StatusNotFound, "Account not found")
 		return
 	}
 
@@ -150,7 +150,7 @@ func (h *AccountHandler) LookupAccountByNumber(c *gin.Context) {
 		UserId: accountResp.Account.UserId,
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch account owner"})
+		handleGRPCError(c, err, http.StatusInternalServerError, "Failed to fetch account owner")
 		return
 	}
 

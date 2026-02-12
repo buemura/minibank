@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -91,7 +93,7 @@ func TestCreateAccount_DefaultType(t *testing.T) {
 func TestCreateAccount_gRPCError(t *testing.T) {
 	handler, accountClient, _, _ := newAccountHandler()
 
-	accountClient.On("CreateAccount", mock.Anything, mock.Anything).Return(nil, errors.New("internal error"))
+	accountClient.On("CreateAccount", mock.Anything, mock.Anything).Return(nil, status.Error(codes.Internal, "internal error"))
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -102,6 +104,8 @@ func TestCreateAccount_gRPCError(t *testing.T) {
 	handler.CreateAccount(c)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	code, _ := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "INTERNAL", code)
 	accountClient.AssertExpectations(t)
 }
 
@@ -189,7 +193,7 @@ func TestGetAccount_NotFound(t *testing.T) {
 	handler, accountClient, _, mockCache := newAccountHandler()
 
 	mockCache.On("Get", "account:id:acc-1").Return("", nil)
-	accountClient.On("GetAccount", mock.Anything, mock.Anything).Return(nil, errors.New("not found"))
+	accountClient.On("GetAccount", mock.Anything, mock.Anything).Return(nil, status.Error(codes.NotFound, "account not found"))
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -199,6 +203,8 @@ func TestGetAccount_NotFound(t *testing.T) {
 	handler.GetAccount(c)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
+	code, _ := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "NOT_FOUND", code)
 	accountClient.AssertExpectations(t)
 	mockCache.AssertExpectations(t)
 }
@@ -230,7 +236,7 @@ func TestGetBalance_Success(t *testing.T) {
 func TestGetBalance_NotFound(t *testing.T) {
 	handler, accountClient, _, _ := newAccountHandler()
 
-	accountClient.On("GetBalance", mock.Anything, mock.Anything).Return(nil, errors.New("not found"))
+	accountClient.On("GetBalance", mock.Anything, mock.Anything).Return(nil, status.Error(codes.NotFound, "account not found"))
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -240,6 +246,8 @@ func TestGetBalance_NotFound(t *testing.T) {
 	handler.GetBalance(c)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
+	code, _ := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "NOT_FOUND", code)
 	accountClient.AssertExpectations(t)
 }
 
@@ -303,13 +311,15 @@ func TestLookupAccountByNumber_MissingParam(t *testing.T) {
 	handler.LookupAccountByNumber(c)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+	code, _ := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "INVALID_ARGUMENT", code)
 }
 
 func TestLookupAccountByNumber_NotFound(t *testing.T) {
 	handler, accountClient, _, mockCache := newAccountHandler()
 
 	mockCache.On("Get", "account:number:0000000000").Return("", nil)
-	accountClient.On("GetAccountByNumber", mock.Anything, mock.Anything).Return(nil, errors.New("not found"))
+	accountClient.On("GetAccountByNumber", mock.Anything, mock.Anything).Return(nil, status.Error(codes.NotFound, "account not found"))
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -318,6 +328,8 @@ func TestLookupAccountByNumber_NotFound(t *testing.T) {
 	handler.LookupAccountByNumber(c)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
+	code, _ := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "NOT_FOUND", code)
 	accountClient.AssertExpectations(t)
 	mockCache.AssertExpectations(t)
 }

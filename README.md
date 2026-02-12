@@ -16,10 +16,6 @@ The architecture of Mini Bank consists of the following microservices:
 
 ![Architecture](docs/arch.png)
 
-### Sequence Diagram for Transfer operation
-
-![Transfer Sequence](docs/transfer-sequence.png)
-
 ## Getting Started
 
 To get started with Mini Bank, follow these steps:

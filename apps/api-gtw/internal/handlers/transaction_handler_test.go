@@ -79,6 +79,8 @@ func TestTransfer_Handler_InvalidBody(t *testing.T) {
 	handler.Transfer(c)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+	code, _ := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "INVALID_ARGUMENT", code)
 }
 
 func TestTransfer_Handler_gRPCError(t *testing.T) {
@@ -131,9 +133,9 @@ func TestTransfer_Handler_BusinessError(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
-	var resp map[string]interface{}
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Equal(t, "INSUFFICIENT_FUNDS", resp["error_code"])
+	code, msg := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "INSUFFICIENT_FUNDS", code)
+	assert.Equal(t, "Not enough balance", msg)
 	txClient.AssertExpectations(t)
 }
 
@@ -180,6 +182,8 @@ func TestDeposit_Handler_InvalidBody(t *testing.T) {
 	handler.Deposit(c)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+	code, _ := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "INVALID_ARGUMENT", code)
 }
 
 func TestDeposit_Handler_gRPCError(t *testing.T) {
@@ -229,6 +233,9 @@ func TestDeposit_Handler_BusinessError(t *testing.T) {
 	handler.Deposit(c)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+	code, msg := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "DEPOSIT_FAILED", code)
+	assert.Equal(t, "Failed to deposit", msg)
 	txClient.AssertExpectations(t)
 }
 
@@ -279,6 +286,8 @@ func TestWithdraw_Handler_InvalidBody(t *testing.T) {
 	handler.Withdraw(c)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+	code, _ := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "INVALID_ARGUMENT", code)
 }
 
 func TestWithdraw_Handler_gRPCError(t *testing.T) {
@@ -329,9 +338,9 @@ func TestWithdraw_Handler_BusinessError(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
-	var resp map[string]interface{}
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Equal(t, "WITHDRAWAL_FAILED", resp["error_code"])
+	code, msg := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "WITHDRAWAL_FAILED", code)
+	assert.Equal(t, "insufficient funds", msg)
 	txClient.AssertExpectations(t)
 }
 

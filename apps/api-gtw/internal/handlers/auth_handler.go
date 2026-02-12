@@ -5,8 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	grpcstatus "google.golang.org/grpc/status"
 
 	authpb "github.com/buemura/minibank/api-gtw/proto/auth/v1"
 	"github.com/buemura/minibank/packages/logger"
@@ -31,7 +29,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("Register: invalid request body", zap.Error(err))
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errorResponse(c, http.StatusBadRequest, "INVALID_ARGUMENT", err.Error())
 		return
 	}
 
@@ -46,7 +44,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	if err != nil {
 		logger.Error("Register: gRPC call failed", zap.String("email", req.Email), zap.Error(err))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Registration failed: " + err.Error()})
+		handleGRPCError(c, err, http.StatusBadRequest, "Registration failed")
 		return
 	}
 
@@ -68,7 +66,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("Login: invalid request body", zap.Error(err))
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errorResponse(c, http.StatusBadRequest, "INVALID_ARGUMENT", err.Error())
 		return
 	}
 
@@ -81,7 +79,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	if err != nil {
 		logger.Warn("Login failed", zap.String("email", req.Email), zap.Error(err))
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		handleGRPCError(c, err, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
@@ -101,7 +99,7 @@ type RefreshRequest struct {
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	var req RefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errorResponse(c, http.StatusBadRequest, "INVALID_ARGUMENT", err.Error())
 		return
 	}
 
@@ -110,7 +108,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
+		handleGRPCError(c, err, http.StatusUnauthorized, "Invalid refresh token")
 		return
 	}
 
@@ -128,7 +126,7 @@ type LogoutRequest struct {
 func (h *AuthHandler) Logout(c *gin.Context) {
 	var req LogoutRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errorResponse(c, http.StatusBadRequest, "INVALID_ARGUMENT", err.Error())
 		return
 	}
 
@@ -137,7 +135,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Logout failed"})
+		handleGRPCError(c, err, http.StatusInternalServerError, "Logout failed")
 		return
 	}
 
@@ -152,7 +150,7 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user profile"})
+		handleGRPCError(c, err, http.StatusInternalServerError, "Failed to get user profile")
 		return
 	}
 
@@ -168,7 +166,7 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	var req ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("ChangePassword: invalid request body", zap.Error(err))
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errorResponse(c, http.StatusBadRequest, "INVALID_ARGUMENT", err.Error())
 		return
 	}
 
@@ -183,18 +181,7 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 
 	if err != nil {
 		logger.Error("ChangePassword: gRPC call failed", zap.String("user_id", userID), zap.Error(err))
-		st, ok := grpcstatus.FromError(err)
-		if ok {
-			switch st.Code() {
-			case codes.InvalidArgument:
-				c.JSON(http.StatusBadRequest, gin.H{"error": st.Message()})
-				return
-			case codes.NotFound:
-				c.JSON(http.StatusNotFound, gin.H{"error": st.Message()})
-				return
-			}
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to change password"})
+		handleGRPCError(c, err, http.StatusInternalServerError, "Failed to change password")
 		return
 	}
 

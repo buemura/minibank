@@ -34,6 +34,14 @@ func protoUser() *authpb.User {
 	}
 }
 
+func parseErrorResponse(t *testing.T, body []byte) (string, string) {
+	t.Helper()
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal(body, &resp))
+	errObj := resp["error"].(map[string]interface{})
+	return errObj["code"].(string), errObj["message"].(string)
+}
+
 func TestRegister_Success(t *testing.T) {
 	authClient := new(mocks.MockAuthServiceClient)
 	handler := NewAuthHandler(authClient)
@@ -83,13 +91,41 @@ func TestRegister_InvalidBody(t *testing.T) {
 	handler.Register(c)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+	code, _ := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "INVALID_ARGUMENT", code)
 }
 
 func TestRegister_gRPCError(t *testing.T) {
 	authClient := new(mocks.MockAuthServiceClient)
 	handler := NewAuthHandler(authClient)
 
-	authClient.On("Register", mock.Anything, mock.Anything).Return(nil, errors.New("user already exists"))
+	authClient.On("Register", mock.Anything, mock.Anything).Return(nil, status.Error(codes.AlreadyExists, "user already exists"))
+
+	body, _ := json.Marshal(map[string]string{
+		"email":     "test@example.com",
+		"password":  "password123",
+		"full_name": "Test User",
+	})
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/auth/register", bytes.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.Register(c)
+
+	assert.Equal(t, http.StatusConflict, w.Code)
+	code, msg := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "ALREADY_EXISTS", code)
+	assert.Equal(t, "user already exists", msg)
+	authClient.AssertExpectations(t)
+}
+
+func TestRegister_gRPCError_NonGRPC(t *testing.T) {
+	authClient := new(mocks.MockAuthServiceClient)
+	handler := NewAuthHandler(authClient)
+
+	authClient.On("Register", mock.Anything, mock.Anything).Return(nil, errors.New("connection refused"))
 
 	body, _ := json.Marshal(map[string]string{
 		"email":     "test@example.com",
@@ -105,6 +141,9 @@ func TestRegister_gRPCError(t *testing.T) {
 	handler.Register(c)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+	code, msg := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "INTERNAL", code)
+	assert.Equal(t, "Registration failed", msg)
 	authClient.AssertExpectations(t)
 }
 
@@ -147,13 +186,15 @@ func TestLogin_InvalidBody(t *testing.T) {
 	handler.Login(c)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+	code, _ := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "INVALID_ARGUMENT", code)
 }
 
 func TestLogin_Failure(t *testing.T) {
 	authClient := new(mocks.MockAuthServiceClient)
 	handler := NewAuthHandler(authClient)
 
-	authClient.On("Login", mock.Anything, mock.Anything).Return(nil, errors.New("invalid credentials"))
+	authClient.On("Login", mock.Anything, mock.Anything).Return(nil, status.Error(codes.Unauthenticated, "invalid credentials"))
 
 	body, _ := json.Marshal(map[string]string{
 		"email":    "test@example.com",
@@ -168,6 +209,8 @@ func TestLogin_Failure(t *testing.T) {
 	handler.Login(c)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	code, _ := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "UNAUTHENTICATED", code)
 	authClient.AssertExpectations(t)
 }
 
@@ -214,7 +257,7 @@ func TestRefresh_Failure(t *testing.T) {
 	authClient := new(mocks.MockAuthServiceClient)
 	handler := NewAuthHandler(authClient)
 
-	authClient.On("RefreshToken", mock.Anything, mock.Anything).Return(nil, errors.New("invalid token"))
+	authClient.On("RefreshToken", mock.Anything, mock.Anything).Return(nil, status.Error(codes.Unauthenticated, "invalid token"))
 
 	body, _ := json.Marshal(map[string]string{
 		"refresh_token": "invalid-token",
@@ -228,6 +271,8 @@ func TestRefresh_Failure(t *testing.T) {
 	handler.Refresh(c)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	code, _ := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "UNAUTHENTICATED", code)
 	authClient.AssertExpectations(t)
 }
 
@@ -360,6 +405,8 @@ func TestChangePassword_InvalidBody(t *testing.T) {
 	handler.ChangePassword(c)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+	code, _ := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "INVALID_ARGUMENT", code)
 }
 
 func TestChangePassword_gRPCError(t *testing.T) {
@@ -382,5 +429,8 @@ func TestChangePassword_gRPCError(t *testing.T) {
 	handler.ChangePassword(c)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+	code, msg := parseErrorResponse(t, w.Body.Bytes())
+	assert.Equal(t, "INVALID_ARGUMENT", code)
+	assert.Equal(t, "current password is incorrect", msg)
 	authClient.AssertExpectations(t)
 }

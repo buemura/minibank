@@ -43,7 +43,7 @@ func (h *TransactionHandler) Transfer(c *gin.Context) {
 
 	var req TransferRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errorResponse(c, http.StatusBadRequest, "INVALID_ARGUMENT", err.Error())
 		return
 	}
 
@@ -56,16 +56,12 @@ func (h *TransactionHandler) Transfer(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Transfer failed"})
+		handleGRPCError(c, err, http.StatusInternalServerError, "Transfer failed")
 		return
 	}
 
 	if !resp.Success {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success":       false,
-			"error_code":    resp.ErrorCode,
-			"error_message": resp.ErrorMessage,
-		})
+		errorResponse(c, http.StatusBadRequest, resp.ErrorCode, resp.ErrorMessage)
 		return
 	}
 
@@ -80,7 +76,7 @@ func (h *TransactionHandler) Deposit(c *gin.Context) {
 
 	var req DepositRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errorResponse(c, http.StatusBadRequest, "INVALID_ARGUMENT", err.Error())
 		return
 	}
 
@@ -92,16 +88,12 @@ func (h *TransactionHandler) Deposit(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Deposit failed"})
+		handleGRPCError(c, err, http.StatusInternalServerError, "Deposit failed")
 		return
 	}
 
 	if !resp.Success {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success":       false,
-			"error_code":    resp.ErrorCode,
-			"error_message": resp.ErrorMessage,
-		})
+		errorResponse(c, http.StatusBadRequest, resp.ErrorCode, resp.ErrorMessage)
 		return
 	}
 
@@ -116,7 +108,7 @@ func (h *TransactionHandler) Withdraw(c *gin.Context) {
 
 	var req WithdrawRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errorResponse(c, http.StatusBadRequest, "INVALID_ARGUMENT", err.Error())
 		return
 	}
 
@@ -128,16 +120,12 @@ func (h *TransactionHandler) Withdraw(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Withdrawal failed"})
+		handleGRPCError(c, err, http.StatusInternalServerError, "Withdrawal failed")
 		return
 	}
 
 	if !resp.Success {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success":       false,
-			"error_code":    resp.ErrorCode,
-			"error_message": resp.ErrorMessage,
-		})
+		errorResponse(c, http.StatusBadRequest, resp.ErrorCode, resp.ErrorMessage)
 		return
 	}
 
@@ -160,7 +148,7 @@ func (h *TransactionHandler) GetTransaction(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Transaction not found"})
+		handleGRPCError(c, err, http.StatusNotFound, "Transaction not found")
 		return
 	}
 
@@ -181,7 +169,7 @@ func (h *TransactionHandler) GetTransactionHistory(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get transaction history"})
+		handleGRPCError(c, err, http.StatusInternalServerError, "Failed to get transaction history")
 		return
 	}
 
@@ -224,7 +212,7 @@ func (h *TransactionHandler) GetStatement(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get statement"})
+		handleGRPCError(c, err, http.StatusInternalServerError, "Failed to get statement")
 		return
 	}
 

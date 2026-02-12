@@ -31,9 +31,9 @@
 ## Infrastructure / Quality
 
 - [ ] **Integration tests** — Current tests are all unit tests with mocks; no end-to-end gRPC or database tests
-- [ ] **CI/CD pipeline** — No `.github/workflows` exist yet
-- [ ] **Dockerize services** — Docker-compose only runs infra; services don't have Dockerfiles
-- [ ] **Graceful error responses** — Gateway returns raw gRPC errors in some cases; could standardize error format
+- [x] **CI/CD pipeline** — No `.github/workflows` exist yet
+- [x] **Dockerize services** — Docker-compose only runs infra; services don't have Dockerfiles
+- [x] **Graceful error responses** — Gateway returns raw gRPC errors in some cases; could standardize error format
 - [ ] **Request validation middleware** — Centralized input validation at the gateway level
 - [x] **Observability monitoring** — Re-enable Prometheus/Grafana (OpenTelemetry)
 - [x] **Observability tracing** — Add distributed tracing (OpenTelemetry)
