@@ -146,7 +146,7 @@ func TestWithdraw_gRPC_Success(t *testing.T) {
 	idemRepo.On("UpdateResponse", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	accountClient.On("DebitAccount", mock.Anything, mock.Anything).Return(&accountpb.DebitAccountResponse{Success: true, NewBalance: "800"}, nil)
-	txRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+	txRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Twice()
 
 	resp, err := server.Withdraw(context.Background(), &pb.WithdrawRequest{
 		IdempotencyKey: "key-1",
@@ -159,6 +159,9 @@ func TestWithdraw_gRPC_Success(t *testing.T) {
 	assert.True(t, resp.Success)
 	assert.NotNil(t, resp.Transaction)
 	assert.Equal(t, pb.TransactionType_TRANSACTION_TYPE_WITHDRAWAL, resp.Transaction.Type)
+	assert.NotNil(t, resp.FeeTransaction)
+	assert.Equal(t, pb.TransactionType_TRANSACTION_TYPE_FEE, resp.FeeTransaction.Type)
+	assert.Equal(t, "10", resp.FeeTransaction.Amount)
 }
 
 func TestWithdraw_gRPC_InternalError(t *testing.T) {

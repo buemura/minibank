@@ -573,12 +573,21 @@ func TestWithdraw_Success(t *testing.T) {
 	idemRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
 	idemRepo.On("UpdateResponse", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
-	accountClient.On("DebitAccount", mock.Anything, mock.Anything).Return(&accountpb.DebitAccountResponse{
+	accountClient.On("DebitAccount", mock.Anything, mock.MatchedBy(func(req *accountpb.DebitAccountRequest) bool {
+		return req.Amount == "200.00"
+	})).Return(&accountpb.DebitAccountResponse{
 		Success:    true,
 		NewBalance: "800.00",
 	}, nil)
 
-	txRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+	accountClient.On("DebitAccount", mock.Anything, mock.MatchedBy(func(req *accountpb.DebitAccountRequest) bool {
+		return req.Amount == "10.00"
+	})).Return(&accountpb.DebitAccountResponse{
+		Success:    true,
+		NewBalance: "790.00",
+	}, nil)
+
+	txRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Twice()
 
 	result, err := svc.Withdraw(context.Background(), input)
 
@@ -589,8 +598,55 @@ func TestWithdraw_Success(t *testing.T) {
 	assert.Equal(t, domain.TransactionStatusCompleted, result.Transaction.Status)
 	assert.True(t, result.Transaction.Amount.Equal(decimal.RequireFromString("200.00")))
 	assert.Equal(t, input.AccountID, result.Transaction.SourceAccountID)
+
+	assert.NotNil(t, result.FeeTransaction)
+	assert.Equal(t, domain.TransactionTypeFee, result.FeeTransaction.Type)
+	assert.Equal(t, domain.TransactionStatusCompleted, result.FeeTransaction.Status)
+	assert.True(t, result.FeeTransaction.Amount.Equal(decimal.RequireFromString("10.00")))
+	assert.Equal(t, input.AccountID, result.FeeTransaction.SourceAccountID)
+	assert.Equal(t, result.Transaction.ID, result.FeeTransaction.ReferenceID)
+	assert.Equal(t, "Withdrawal fee (5%)", result.FeeTransaction.Description)
+
 	txRepo.AssertExpectations(t)
 	idemRepo.AssertExpectations(t)
+	accountClient.AssertExpectations(t)
+}
+
+func TestWithdraw_FeeDebitFails_RollsBack(t *testing.T) {
+	svc, txRepo, idemRepo, accountClient := newTestService()
+	input := defaultWithdrawInput()
+
+	idemRepo.On("GetByKey", mock.Anything, input.IdempotencyKey).Return(nil, nil)
+	idemRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+	idemRepo.On("UpdateResponse", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	accountClient.On("DebitAccount", mock.Anything, mock.MatchedBy(func(req *accountpb.DebitAccountRequest) bool {
+		return req.Amount == "200.00"
+	})).Return(&accountpb.DebitAccountResponse{
+		Success:    true,
+		NewBalance: "800.00",
+	}, nil)
+
+	accountClient.On("DebitAccount", mock.Anything, mock.MatchedBy(func(req *accountpb.DebitAccountRequest) bool {
+		return req.Amount == "10.00"
+	})).Return(&accountpb.DebitAccountResponse{
+		Success:      false,
+		ErrorMessage: "insufficient funds",
+	}, nil)
+
+	accountClient.On("CreditAccount", mock.Anything, mock.Anything).Return(&accountpb.CreditAccountResponse{
+		Success:    true,
+		NewBalance: "1000.00",
+	}, nil)
+
+	txRepo.On("Create", mock.Anything, mock.Anything).Return(nil).Once()
+
+	result, err := svc.Withdraw(context.Background(), input)
+
+	require.NoError(t, err)
+	assert.False(t, result.Success)
+	assert.Equal(t, "WITHDRAWAL_FAILED", result.ErrorCode)
+	assert.Equal(t, "Failed to debit withdrawal fee", result.ErrorMessage)
 	accountClient.AssertExpectations(t)
 }
 

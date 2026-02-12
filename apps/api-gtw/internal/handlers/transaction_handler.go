@@ -141,10 +141,15 @@ func (h *TransactionHandler) Withdraw(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	response := gin.H{
 		"success":     true,
 		"transaction": mapProtoTransactionToResponse(resp.Transaction),
-	})
+	}
+	if resp.FeeTransaction != nil {
+		response["fee_transaction"] = mapProtoTransactionToResponse(resp.FeeTransaction)
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *TransactionHandler) GetTransaction(c *gin.Context) {

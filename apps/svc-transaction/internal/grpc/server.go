@@ -117,6 +117,9 @@ func (s *TransactionServer) Withdraw(ctx context.Context, req *pb.WithdrawReques
 
 	if result.Transaction != nil {
 		resp.Transaction = domainTransactionToProto(result.Transaction)
+		if result.FeeTransaction != nil {
+			resp.FeeTransaction = domainTransactionToProto(result.FeeTransaction)
+		}
 		logger.Info("Withdraw completed", zap.String("transaction_id", result.Transaction.ID), zap.Bool("success", result.Success))
 	} else if !result.Success {
 		logger.Warn("Withdraw not successful", zap.String("error_code", result.ErrorCode), zap.String("error_message", result.ErrorMessage))

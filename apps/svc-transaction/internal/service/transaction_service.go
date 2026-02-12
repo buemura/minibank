@@ -22,6 +22,8 @@ var (
 	ErrAccountNotFound     = errors.New("account not found")
 	ErrTransferFailed      = errors.New("transfer failed")
 	ErrInvalidAmount       = errors.New("invalid amount")
+
+	WithdrawalFeeRate = decimal.NewFromFloat(0.05)
 )
 
 type TransactionService struct {
@@ -79,10 +81,11 @@ type WithdrawInput struct {
 }
 
 type WithdrawResult struct {
-	Success      bool
-	Transaction  *domain.Transaction
-	ErrorCode    string
-	ErrorMessage string
+	Success        bool
+	Transaction    *domain.Transaction
+	FeeTransaction *domain.Transaction
+	ErrorCode      string
+	ErrorMessage   string
 }
 
 func (s *TransactionService) Transfer(ctx context.Context, input TransferInput) (*TransferResult, error) {
@@ -404,12 +407,45 @@ func (s *TransactionService) Withdraw(ctx context.Context, input WithdrawInput) 
 		return nil, err
 	}
 
-	responseBody, _ := json.Marshal(WithdrawResult{Success: true, Transaction: transaction})
+	feeAmount := amount.Mul(WithdrawalFeeRate)
+	feeTxID := uuid.New().String()
+
+	feeDebitResp, err := s.accountClient.DebitAccount(ctx, &accountpb.DebitAccountRequest{
+		AccountId:     input.AccountID,
+		Amount:        feeAmount.StringFixed(2),
+		TransactionId: feeTxID,
+	})
+	if err != nil || !feeDebitResp.GetSuccess() {
+		_, _ = s.accountClient.CreditAccount(ctx, &accountpb.CreditAccountRequest{
+			AccountId:     input.AccountID,
+			Amount:        input.Amount,
+			TransactionId: txID + "-rollback",
+		})
+		return s.failWithdraw(ctx, input.IdempotencyKey, "WITHDRAWAL_FAILED", "Failed to debit withdrawal fee")
+	}
+
+	feeTransaction := &domain.Transaction{
+		Type:            domain.TransactionTypeFee,
+		Status:          domain.TransactionStatusCompleted,
+		SourceAccountID: input.AccountID,
+		Amount:          feeAmount,
+		Currency:        "BRL",
+		Description:     "Withdrawal fee (5%)",
+		ReferenceID:     transaction.ID,
+		ProcessedAt:     &now,
+	}
+
+	if err := s.transactionRepo.Create(ctx, feeTransaction); err != nil {
+		return nil, err
+	}
+
+	responseBody, _ := json.Marshal(WithdrawResult{Success: true, Transaction: transaction, FeeTransaction: feeTransaction})
 	_ = s.idempotencyRepo.UpdateResponse(ctx, input.IdempotencyKey, 200, responseBody, transaction.ID)
 
 	return &WithdrawResult{
-		Success:     true,
-		Transaction: transaction,
+		Success:        true,
+		Transaction:    transaction,
+		FeeTransaction: feeTransaction,
 	}, nil
 }
 

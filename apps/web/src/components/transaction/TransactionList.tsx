@@ -50,6 +50,7 @@ export default function TransactionList({ transactions, currentAccountId }: Tran
   function getTransactionLabel(transaction: Transaction): string {
     if (transaction.type === 'WITHDRAWAL') return 'Withdrawal'
     if (transaction.type === 'DEPOSIT') return 'Deposit'
+    if (transaction.type === 'FEE') return 'Withdrawal fee'
     if (isOutgoing(transaction)) {
       return `Sent to ${transaction.destination_account_number}`
     }

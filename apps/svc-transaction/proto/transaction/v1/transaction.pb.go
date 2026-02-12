@@ -621,13 +621,14 @@ func (x *WithdrawRequest) GetDescription() string {
 }
 
 type WithdrawResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Transaction   *Transaction           `protobuf:"bytes,2,opt,name=transaction,proto3" json:"transaction,omitempty"`
-	ErrorCode     string                 `protobuf:"bytes,3,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
-	ErrorMessage  string                 `protobuf:"bytes,4,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Success        bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Transaction    *Transaction           `protobuf:"bytes,2,opt,name=transaction,proto3" json:"transaction,omitempty"`
+	ErrorCode      string                 `protobuf:"bytes,3,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
+	ErrorMessage   string                 `protobuf:"bytes,4,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	FeeTransaction *Transaction           `protobuf:"bytes,5,opt,name=fee_transaction,json=feeTransaction,proto3" json:"fee_transaction,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *WithdrawResponse) Reset() {
@@ -686,6 +687,13 @@ func (x *WithdrawResponse) GetErrorMessage() string {
 		return x.ErrorMessage
 	}
 	return ""
+}
+
+func (x *WithdrawResponse) GetFeeTransaction() *Transaction {
+	if x != nil {
+		return x.FeeTransaction
+	}
+	return nil
 }
 
 type GetTransactionRequest struct {
@@ -1130,13 +1138,14 @@ const file_transaction_v1_transaction_proto_rawDesc = "" +
 	"\n" +
 	"account_id\x18\x02 \x01(\tR\taccountId\x12\x16\n" +
 	"\x06amount\x18\x03 \x01(\tR\x06amount\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\"\xaf\x01\n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\"\xf5\x01\n" +
 	"\x10WithdrawResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12=\n" +
 	"\vtransaction\x18\x02 \x01(\v2\x1b.transaction.v1.TransactionR\vtransaction\x12\x1d\n" +
 	"\n" +
 	"error_code\x18\x03 \x01(\tR\terrorCode\x12#\n" +
-	"\rerror_message\x18\x04 \x01(\tR\ferrorMessage\">\n" +
+	"\rerror_message\x18\x04 \x01(\tR\ferrorMessage\x12D\n" +
+	"\x0ffee_transaction\x18\x05 \x01(\v2\x1b.transaction.v1.TransactionR\x0efeeTransaction\">\n" +
 	"\x15GetTransactionRequest\x12%\n" +
 	"\x0etransaction_id\x18\x01 \x01(\tR\rtransactionId\"W\n" +
 	"\x16GetTransactionResponse\x12=\n" +
@@ -1233,31 +1242,32 @@ var file_transaction_v1_transaction_proto_depIdxs = []int32{
 	2,  // 4: transaction.v1.TransferResponse.transaction:type_name -> transaction.v1.Transaction
 	2,  // 5: transaction.v1.DepositResponse.transaction:type_name -> transaction.v1.Transaction
 	2,  // 6: transaction.v1.WithdrawResponse.transaction:type_name -> transaction.v1.Transaction
-	2,  // 7: transaction.v1.GetTransactionResponse.transaction:type_name -> transaction.v1.Transaction
-	0,  // 8: transaction.v1.GetTransactionHistoryRequest.type_filter:type_name -> transaction.v1.TransactionType
-	2,  // 9: transaction.v1.GetTransactionHistoryResponse.transactions:type_name -> transaction.v1.Transaction
-	15, // 10: transaction.v1.GetStatementRequest.start_date:type_name -> google.protobuf.Timestamp
-	15, // 11: transaction.v1.GetStatementRequest.end_date:type_name -> google.protobuf.Timestamp
-	2,  // 12: transaction.v1.GetStatementResponse.transactions:type_name -> transaction.v1.Transaction
-	15, // 13: transaction.v1.GetStatementResponse.start_date:type_name -> google.protobuf.Timestamp
-	15, // 14: transaction.v1.GetStatementResponse.end_date:type_name -> google.protobuf.Timestamp
-	3,  // 15: transaction.v1.TransactionService.Transfer:input_type -> transaction.v1.TransferRequest
-	5,  // 16: transaction.v1.TransactionService.Deposit:input_type -> transaction.v1.DepositRequest
-	7,  // 17: transaction.v1.TransactionService.Withdraw:input_type -> transaction.v1.WithdrawRequest
-	9,  // 18: transaction.v1.TransactionService.GetTransaction:input_type -> transaction.v1.GetTransactionRequest
-	11, // 19: transaction.v1.TransactionService.GetTransactionHistory:input_type -> transaction.v1.GetTransactionHistoryRequest
-	13, // 20: transaction.v1.TransactionService.GetStatement:input_type -> transaction.v1.GetStatementRequest
-	4,  // 21: transaction.v1.TransactionService.Transfer:output_type -> transaction.v1.TransferResponse
-	6,  // 22: transaction.v1.TransactionService.Deposit:output_type -> transaction.v1.DepositResponse
-	8,  // 23: transaction.v1.TransactionService.Withdraw:output_type -> transaction.v1.WithdrawResponse
-	10, // 24: transaction.v1.TransactionService.GetTransaction:output_type -> transaction.v1.GetTransactionResponse
-	12, // 25: transaction.v1.TransactionService.GetTransactionHistory:output_type -> transaction.v1.GetTransactionHistoryResponse
-	14, // 26: transaction.v1.TransactionService.GetStatement:output_type -> transaction.v1.GetStatementResponse
-	21, // [21:27] is the sub-list for method output_type
-	15, // [15:21] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	2,  // 7: transaction.v1.WithdrawResponse.fee_transaction:type_name -> transaction.v1.Transaction
+	2,  // 8: transaction.v1.GetTransactionResponse.transaction:type_name -> transaction.v1.Transaction
+	0,  // 9: transaction.v1.GetTransactionHistoryRequest.type_filter:type_name -> transaction.v1.TransactionType
+	2,  // 10: transaction.v1.GetTransactionHistoryResponse.transactions:type_name -> transaction.v1.Transaction
+	15, // 11: transaction.v1.GetStatementRequest.start_date:type_name -> google.protobuf.Timestamp
+	15, // 12: transaction.v1.GetStatementRequest.end_date:type_name -> google.protobuf.Timestamp
+	2,  // 13: transaction.v1.GetStatementResponse.transactions:type_name -> transaction.v1.Transaction
+	15, // 14: transaction.v1.GetStatementResponse.start_date:type_name -> google.protobuf.Timestamp
+	15, // 15: transaction.v1.GetStatementResponse.end_date:type_name -> google.protobuf.Timestamp
+	3,  // 16: transaction.v1.TransactionService.Transfer:input_type -> transaction.v1.TransferRequest
+	5,  // 17: transaction.v1.TransactionService.Deposit:input_type -> transaction.v1.DepositRequest
+	7,  // 18: transaction.v1.TransactionService.Withdraw:input_type -> transaction.v1.WithdrawRequest
+	9,  // 19: transaction.v1.TransactionService.GetTransaction:input_type -> transaction.v1.GetTransactionRequest
+	11, // 20: transaction.v1.TransactionService.GetTransactionHistory:input_type -> transaction.v1.GetTransactionHistoryRequest
+	13, // 21: transaction.v1.TransactionService.GetStatement:input_type -> transaction.v1.GetStatementRequest
+	4,  // 22: transaction.v1.TransactionService.Transfer:output_type -> transaction.v1.TransferResponse
+	6,  // 23: transaction.v1.TransactionService.Deposit:output_type -> transaction.v1.DepositResponse
+	8,  // 24: transaction.v1.TransactionService.Withdraw:output_type -> transaction.v1.WithdrawResponse
+	10, // 25: transaction.v1.TransactionService.GetTransaction:output_type -> transaction.v1.GetTransactionResponse
+	12, // 26: transaction.v1.TransactionService.GetTransactionHistory:output_type -> transaction.v1.GetTransactionHistoryResponse
+	14, // 27: transaction.v1.TransactionService.GetStatement:output_type -> transaction.v1.GetStatementResponse
+	22, // [22:28] is the sub-list for method output_type
+	16, // [16:22] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_transaction_v1_transaction_proto_init() }

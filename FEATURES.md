@@ -8,7 +8,7 @@
 - [ ] **Account status management** — Domain supports `active`/`inactive`/`blocked` but there's no API to change status (close account, block/unblock)
 - [ ] **User profile updates** — `svc-auth` has an `Update` repository method but no gRPC RPC or API endpoint to update name/phone
 - [x] **Password change** — No endpoint to change password for authenticated users
-- [ ] **Fee transactions** — `FEE` type exists in the enum but is never created
+- [x] **Fee transactions** — 5% fee automatically charged on withdrawal transactions
 
 ## Medium Effort
 
@@ -35,4 +35,5 @@
 - [ ] **Dockerize services** — Docker-compose only runs infra; services don't have Dockerfiles
 - [ ] **Graceful error responses** — Gateway returns raw gRPC errors in some cases; could standardize error format
 - [ ] **Request validation middleware** — Centralized input validation at the gateway level
-- [ ] **Observability** — Re-enable Prometheus/Grafana, add distributed tracing (OpenTelemetry)
+- [ ] **Observability monitoring** — Re-enable Prometheus/Grafana (OpenTelemetry)
+- [x] **Observability tracing** — Add distributed tracing (OpenTelemetry)

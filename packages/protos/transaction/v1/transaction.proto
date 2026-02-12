@@ -88,6 +88,7 @@ message WithdrawResponse {
   Transaction transaction = 2;
   string error_code = 3;
   string error_message = 4;
+  Transaction fee_transaction = 5;
 }
 
 message GetTransactionRequest {
