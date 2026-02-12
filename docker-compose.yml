@@ -9,23 +9,31 @@ volumes:
   metrics:
 
 services:
-  # prometheus:
-  #   image: prom/prometheus:v2.40.4
-  #   ports:
-  #     - 9090:9090
-  #   volumes:
-  #     - ./metrics/prometheus.yml:/etc/prometheus/prometheus.yml
+  prometheus:
+    image: prom/prometheus:v2.40.4
+    ports:
+      - 9090:9090
+    volumes:
+      - ./metrics/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - minibank
 
-  # grafana:
-  #   image: grafana/grafana:9.3.0
-  #   ports:
-  #     - 3000:3000
-  #   environment:
-  #     - GF_SECURITY_ADMIN_USER=admin
-  #     - GF_SECURITY_ADMIN_PASSWORD=devops123
-  #   volumes:
-  #     - ./metrics/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
-  #     - metrics:/var/lib/grafana
+  grafana:
+    image: grafana/grafana:9.3.0
+    ports:
+      - 3000:3000
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=devops123
+    volumes:
+      - ./metrics/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./metrics/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./metrics/dashboards:/var/lib/grafana/dashboards
+      - metrics:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - minibank
 
   jaeger:
     image: jaegertracing/all-in-one:1.65.0

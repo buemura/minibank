@@ -14,6 +14,7 @@ type Config struct {
 	DBPassword string
 	DBName       string
 	OTLPEndpoint string
+	MetricsPort  string
 }
 
 func Load() *Config {
@@ -27,6 +28,7 @@ func Load() *Config {
 		DBPassword: getEnv("DB_PASSWORD", "postgres"),
 		DBName:       getEnv("DB_NAME", "account_db"),
 		OTLPEndpoint: getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317"),
+		MetricsPort:  getEnv("METRICS_PORT", "9092"),
 	}
 }
 

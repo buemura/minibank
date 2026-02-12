@@ -35,5 +35,5 @@
 - [ ] **Dockerize services** — Docker-compose only runs infra; services don't have Dockerfiles
 - [ ] **Graceful error responses** — Gateway returns raw gRPC errors in some cases; could standardize error format
 - [ ] **Request validation middleware** — Centralized input validation at the gateway level
-- [ ] **Observability monitoring** — Re-enable Prometheus/Grafana (OpenTelemetry)
+- [x] **Observability monitoring** — Re-enable Prometheus/Grafana (OpenTelemetry)
 - [x] **Observability tracing** — Add distributed tracing (OpenTelemetry)

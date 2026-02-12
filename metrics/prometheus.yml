@@ -8,12 +8,15 @@ alerting:
 rule_files:
 
 scrape_configs:
-  - job_name: apigateway
+  - job_name: api-gtw
     static_configs:
-      - targets: ["apigateway:8080"]
-  - job_name: svcaccount
+      - targets: ["host.docker.internal:8080"]
+  - job_name: svc-auth
     static_configs:
-      - targets: ["svcaccount:8081"]
-  - job_name: svctransaction
+      - targets: ["host.docker.internal:9091"]
+  - job_name: svc-account
     static_configs:
-      - targets: ["svctransaction:8082"]
+      - targets: ["host.docker.internal:9092"]
+  - job_name: svc-transaction
+    static_configs:
+      - targets: ["host.docker.internal:9093"]

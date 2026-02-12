@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
+	"github.com/buemura/minibank/packages/metrics"
 	"github.com/buemura/minibank/packages/tracing"
 	"github.com/buemura/minibank/svc-auth/internal/config"
 	"github.com/buemura/minibank/svc-auth/internal/database"
@@ -45,6 +46,23 @@ func main() {
 	defer func() {
 		if err := shutdownTracer(context.Background()); err != nil {
 			logger.Error("failed to shutdown tracer", zap.Error(err))
+		}
+	}()
+
+	shutdownMeter, err := metrics.Init(ctx)
+	if err != nil {
+		logger.Fatal("failed to initialize metrics", zap.Error(err))
+	}
+	defer func() {
+		if err := shutdownMeter(context.Background()); err != nil {
+			logger.Error("failed to shutdown meter provider", zap.Error(err))
+		}
+	}()
+
+	go func() {
+		logger.Info("starting metrics server", zap.String("port", cfg.MetricsPort))
+		if err := metrics.ServeMetrics(cfg.MetricsPort); err != nil {
+			logger.Error("metrics server error", zap.Error(err))
 		}
 	}()
 

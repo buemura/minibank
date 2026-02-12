@@ -15,6 +15,7 @@ type Config struct {
 	DBName             string
 	AccountServiceAddr string
 	OTLPEndpoint       string
+	MetricsPort        string
 }
 
 func Load() *Config {
@@ -29,6 +30,7 @@ func Load() *Config {
 		DBName:             getEnv("DB_NAME", "transaction_db"),
 		AccountServiceAddr: getEnv("ACCOUNT_SERVICE_ADDR", "localhost:50052"),
 		OTLPEndpoint:       getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317"),
+		MetricsPort:        getEnv("METRICS_PORT", "9093"),
 	}
 }
 

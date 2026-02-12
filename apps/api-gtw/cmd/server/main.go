@@ -21,6 +21,7 @@ import (
 	"github.com/buemura/minibank/api-gtw/internal/handlers"
 	"github.com/buemura/minibank/api-gtw/internal/middleware"
 	pkgcache "github.com/buemura/minibank/packages/cache"
+	"github.com/buemura/minibank/packages/metrics"
 	"github.com/buemura/minibank/packages/tracing"
 	accountpb "github.com/buemura/minibank/api-gtw/proto/account/v1"
 	authpb "github.com/buemura/minibank/api-gtw/proto/auth/v1"
@@ -40,6 +41,16 @@ func main() {
 	defer func() {
 		if err := shutdownTracer(context.Background()); err != nil {
 			logger.Error("failed to shutdown tracer", zap.Error(err))
+		}
+	}()
+
+	shutdownMeter, err := metrics.Init(context.Background())
+	if err != nil {
+		logger.Fatal("failed to initialize metrics", zap.Error(err))
+	}
+	defer func() {
+		if err := shutdownMeter(context.Background()); err != nil {
+			logger.Error("failed to shutdown meter provider", zap.Error(err))
 		}
 	}()
 
@@ -97,6 +108,8 @@ func main() {
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+
+	router.GET("/metrics", gin.WrapH(metrics.Handler()))
 
 	router.GET("/docs", docs.ScalarHandler())
 	router.GET("/docs/openapi.yaml", docs.SpecHandler())

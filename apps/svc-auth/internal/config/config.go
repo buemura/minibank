@@ -19,6 +19,7 @@ type Config struct {
 	AccessTokenExpiry  time.Duration
 	RefreshTokenExpiry time.Duration
 	OTLPEndpoint       string
+	MetricsPort        string
 }
 
 func Load() *Config {
@@ -35,6 +36,7 @@ func Load() *Config {
 		AccessTokenExpiry:  getDurationEnv("ACCESS_TOKEN_EXPIRY", 15*time.Minute),
 		RefreshTokenExpiry: getDurationEnv("REFRESH_TOKEN_EXPIRY", 7*24*time.Hour),
 		OTLPEndpoint:       getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317"),
+		MetricsPort:        getEnv("METRICS_PORT", "9091"),
 	}
 }
 
