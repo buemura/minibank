@@ -29,19 +29,21 @@ paths:
   /health:
     get:
       tags: [Health]
-      summary: Health check
+      summary: Health check with backend service status
       security: []
       responses:
         "200":
-          description: Service is healthy
+          description: All services healthy
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: ok
+                $ref: "#/components/schemas/HealthCheckResponse"
+        "503":
+          description: One or more services unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthCheckResponse"
 
   /api/v1/auth/register:
     post:
@@ -509,6 +511,32 @@ components:
         type: string
 
   schemas:
+    HealthCheckResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded]
+          example: healthy
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceHealth"
+
+    ServiceHealth:
+      type: object
+      properties:
+        name:
+          type: string
+          example: svc-auth
+        status:
+          type: string
+          enum: [SERVING, NOT_SERVING, UNAVAILABLE]
+          example: SERVING
+        latency:
+          type: string
+          example: 1.234ms
+
     ErrorResponse:
       type: object
       properties:

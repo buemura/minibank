@@ -90,6 +90,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authClient)
 	accountHandler := handlers.NewAccountHandler(accountClient, authClient, redisCache)
 	transactionHandler := handlers.NewTransactionHandler(transactionClient)
+	healthHandler := handlers.NewHealthHandler(authConn, accountConn, transactionConn)
 
 	authMiddleware := middleware.NewAuthMiddleware(authClient, redisCache)
 
@@ -105,9 +106,7 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	router.GET("/health", healthHandler.HealthCheck)
 
 	router.GET("/metrics", gin.WrapH(metrics.Handler()))
 
