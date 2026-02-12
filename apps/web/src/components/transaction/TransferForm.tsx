@@ -1,19 +1,31 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { v4 as uuidv4 } from 'uuid'
-import { usePrimaryAccount } from '@/hooks/useAccounts'
+import { usePrimaryAccount, useAccountLookup } from '@/hooks/useAccounts'
 import { useTransfer } from '@/hooks/useTransactions'
 import Button from '@/components/common/Button'
 import Input from '@/components/common/Input'
 
 export default function TransferForm() {
+  const navigate = useNavigate()
   const { primaryAccount } = usePrimaryAccount()
   const transferMutation = useTransfer()
 
   const [destinationAccount, setDestinationAccount] = useState('')
+  const [debouncedAccount, setDebouncedAccount] = useState('')
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedAccount(destinationAccount.trim())
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [destinationAccount])
+
+  const accountLookup = useAccountLookup(debouncedAccount)
 
   const currentBalance = primaryAccount?.balance ?? '0.00'
   const accountId = primaryAccount?.id ?? ''
@@ -21,7 +33,11 @@ export default function TransferForm() {
   const numAmount = parseFloat(amount)
   const numBalance = parseFloat(currentBalance)
   const isValidAmount = !isNaN(numAmount) && numAmount > 0 && numAmount <= numBalance
-  const canSubmit = destinationAccount.trim() !== '' && isValidAmount && !transferMutation.isPending
+  const canSubmit =
+    accountLookup.isSuccess &&
+    !!accountLookup.data &&
+    isValidAmount &&
+    !transferMutation.isPending
 
   function formatCurrency(value: string): string {
     const num = parseFloat(value)
@@ -54,10 +70,7 @@ export default function TransferForm() {
       })
 
       if (result.success) {
-        setSuccessMessage(`Transfer of ${formatCurrency(amount)} completed successfully!`)
-        setDestinationAccount('')
-        setAmount('')
-        setDescription('')
+        navigate({ to: '/dashboard' })
       } else {
         setErrorMessage(result.error_message || 'Transfer failed')
       }
@@ -81,6 +94,24 @@ export default function TransferForm() {
         placeholder="Enter the recipient's account number"
         required
       />
+
+      {accountLookup.isFetching && (
+        <div className="text-sm text-gray-500 dark:text-gray-400">Looking up account...</div>
+      )}
+
+      {accountLookup.isSuccess && accountLookup.data && (
+        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Recipient</p>
+          <p className="font-semibold text-gray-900 dark:text-gray-100">{accountLookup.data.owner_name}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Agency {accountLookup.data.agency} &middot; Account {accountLookup.data.account_number}
+          </p>
+        </div>
+      )}
+
+      {accountLookup.isError && debouncedAccount && (
+        <div className="text-sm text-red-500">Account not found. Please check the account number.</div>
+      )}
 
       <Input
         value={amount}

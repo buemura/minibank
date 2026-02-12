@@ -4,15 +4,17 @@ import (
 	"net/http"
 
 	accountpb "github.com/buemura/minibank/api-gtw/proto/account/v1"
+	authpb "github.com/buemura/minibank/api-gtw/proto/auth/v1"
 	"github.com/gin-gonic/gin"
 )
 
 type AccountHandler struct {
 	accountClient accountpb.AccountServiceClient
+	authClient    authpb.AuthServiceClient
 }
 
-func NewAccountHandler(accountClient accountpb.AccountServiceClient) *AccountHandler {
-	return &AccountHandler{accountClient: accountClient}
+func NewAccountHandler(accountClient accountpb.AccountServiceClient, authClient authpb.AuthServiceClient) *AccountHandler {
+	return &AccountHandler{accountClient: accountClient, authClient: authClient}
 }
 
 type CreateAccountRequest struct {
@@ -100,6 +102,36 @@ func (h *AccountHandler) GetBalance(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"balance":  resp.Balance,
 		"currency": resp.Currency,
+	})
+}
+
+func (h *AccountHandler) LookupAccountByNumber(c *gin.Context) {
+	accountNumber := c.Query("account_number")
+	if accountNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "account_number query parameter is required"})
+		return
+	}
+
+	accountResp, err := h.accountClient.GetAccountByNumber(c.Request.Context(), &accountpb.GetAccountByNumberRequest{
+		AccountNumber: accountNumber,
+	})
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Account not found"})
+		return
+	}
+
+	userResp, err := h.authClient.GetUserProfile(c.Request.Context(), &authpb.GetUserProfileRequest{
+		UserId: accountResp.Account.UserId,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch account owner"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"account_number": accountResp.Account.AccountNumber,
+		"agency":         accountResp.Account.Agency,
+		"owner_name":     userResp.User.FullName,
 	})
 }
 

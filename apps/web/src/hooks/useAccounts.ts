@@ -25,6 +25,15 @@ export function useCreateAccount() {
   })
 }
 
+export function useAccountLookup(accountNumber: string) {
+  return useQuery({
+    queryKey: ['account-lookup', accountNumber],
+    queryFn: () => accountsApi.lookupByNumber(accountNumber),
+    enabled: accountNumber.trim().length > 0,
+    retry: false,
+  })
+}
+
 export function useRefreshBalance() {
   const queryClient = useQueryClient()
 

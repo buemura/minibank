@@ -52,7 +52,7 @@ func main() {
 	transactionClient := transactionpb.NewTransactionServiceClient(transactionConn)
 
 	authHandler := handlers.NewAuthHandler(authClient)
-	accountHandler := handlers.NewAccountHandler(accountClient)
+	accountHandler := handlers.NewAccountHandler(accountClient, authClient)
 	transactionHandler := handlers.NewTransactionHandler(transactionClient)
 
 	authMiddleware := middleware.NewAuthMiddleware(authClient)
@@ -91,6 +91,7 @@ func main() {
 		{
 			accounts.GET("", accountHandler.GetAccounts)
 			accounts.POST("", accountHandler.CreateAccount)
+			accounts.GET("/lookup", accountHandler.LookupAccountByNumber)
 			accounts.GET("/:id", accountHandler.GetAccount)
 			accounts.GET("/:id/balance", accountHandler.GetBalance)
 			accounts.POST("/:id/transfers", transactionHandler.Transfer)

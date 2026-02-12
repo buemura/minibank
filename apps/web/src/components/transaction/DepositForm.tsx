@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { v4 as uuidv4 } from 'uuid'
 import { usePrimaryAccount } from '@/hooks/useAccounts'
 import { useDeposit } from '@/hooks/useTransactions'
@@ -6,6 +7,7 @@ import Button from '@/components/common/Button'
 import Input from '@/components/common/Input'
 
 export default function DepositForm() {
+  const navigate = useNavigate()
   const { primaryAccount } = usePrimaryAccount()
   const depositMutation = useDeposit()
 
@@ -51,9 +53,7 @@ export default function DepositForm() {
       })
 
       if (result.success) {
-        setSuccessMessage(`Deposit of ${formatCurrency(amount)} completed successfully!`)
-        setAmount('')
-        setDescription('')
+        navigate({ to: '/dashboard' })
       } else {
         setErrorMessage(result.error_message || 'Deposit failed')
       }

@@ -1,5 +1,5 @@
 import client from './client'
-import type { Account } from '@/types'
+import type { Account, AccountLookup } from '@/types'
 
 export const accountsApi = {
   async getAccounts(): Promise<Account[]> {
@@ -19,6 +19,13 @@ export const accountsApi = {
 
   async getBalance(accountId: string): Promise<{ balance: string; currency: string }> {
     const { data } = await client.get<{ balance: string; currency: string }>(`/accounts/${accountId}/balance`)
+    return data
+  },
+
+  async lookupByNumber(accountNumber: string): Promise<AccountLookup> {
+    const { data } = await client.get<AccountLookup>('/accounts/lookup', {
+      params: { account_number: accountNumber },
+    })
     return data
   },
 }

@@ -95,6 +95,12 @@ export interface StatementResponse {
   end_date: string
 }
 
+export interface AccountLookup {
+  account_number: string
+  agency: string
+  owner_name: string
+}
+
 export interface ApiError {
   error: string
   error_code?: string
