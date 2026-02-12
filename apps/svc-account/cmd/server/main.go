@@ -66,7 +66,13 @@ func main() {
 		}
 	}()
 
-	pool, err := pgxpool.New(ctx, cfg.DatabaseURL())
+	poolConfig, err := pgxpool.ParseConfig(cfg.DatabaseURL())
+	if err != nil {
+		logger.Fatal("failed to parse database config", zap.Error(err))
+	}
+	poolConfig.ConnConfig.Tracer = tracing.NewPgxTracer()
+
+	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {
 		logger.Fatal("failed to connect to database", zap.Error(err))
 	}

@@ -158,4 +158,12 @@ API docs available at `http://localhost:8080/docs` (Scalar UI with OpenAPI spec)
 | **Prometheus** | `http://localhost:9090`  | Metrics collection           |
 | **Grafana**    | `http://localhost:3000`  | Dashboards (admin/devops123) |
 
-All services are instrumented with OpenTelemetry for distributed tracing and metrics export.
+All services are instrumented with OpenTelemetry for distributed tracing and metrics export. Traces cover HTTP requests, gRPC calls between services, and database queries (via pgx instrumentation).
+
+### Jaeger
+
+![Jaeger Trace Example](docs/jaeger.png)
+
+### Grafana
+
+![Grafana Dashboard](docs/grafana.png)
