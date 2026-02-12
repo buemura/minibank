@@ -143,6 +143,13 @@ func (s *TransactionService) Transfer(ctx context.Context, input TransferInput) 
 		return s.failTransfer(ctx, input.IdempotencyKey, "INVALID_DESTINATION", "Destination account not found")
 	}
 
+	sourceAccountResp, err := s.accountClient.GetAccount(ctx, &accountpb.GetAccountRequest{
+		AccountId: input.SourceAccountID,
+	})
+	if err != nil || sourceAccountResp.Account == nil {
+		return s.failTransfer(ctx, input.IdempotencyKey, "INVALID_SOURCE", "Source account not found")
+	}
+
 	txID := uuid.New().String()
 
 	debitResp, err := s.accountClient.DebitAccount(ctx, &accountpb.DebitAccountRequest{
@@ -178,6 +185,7 @@ func (s *TransactionService) Transfer(ctx context.Context, input TransferInput) 
 		Type:                     domain.TransactionTypeTransfer,
 		Status:                   domain.TransactionStatusCompleted,
 		SourceAccountID:          input.SourceAccountID,
+		SourceAccountNumber:      sourceAccountResp.Account.AccountNumber,
 		DestinationAccountID:     destAccountResp.Account.Id,
 		DestinationAccountNumber: input.DestinationAccountNumber,
 		Amount:                   amount,

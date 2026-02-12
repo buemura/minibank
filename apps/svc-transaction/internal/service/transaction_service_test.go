@@ -68,6 +68,9 @@ func TestTransfer_Success(t *testing.T) {
 	accountClient.On("GetAccountByNumber", mock.Anything, mock.Anything).Return(&accountpb.GetAccountByNumberResponse{
 		Account: &accountpb.Account{Id: "dest-acc-1", AccountNumber: "9876543210"},
 	}, nil)
+	accountClient.On("GetAccount", mock.Anything, mock.Anything).Return(&accountpb.GetAccountResponse{
+		Account: &accountpb.Account{Id: "src-acc-1", AccountNumber: "1234567890"},
+	}, nil)
 	accountClient.On("DebitAccount", mock.Anything, mock.Anything).Return(&accountpb.DebitAccountResponse{
 		Success:    true,
 		NewBalance: "900.00",
@@ -86,6 +89,7 @@ func TestTransfer_Success(t *testing.T) {
 	assert.NotNil(t, result.Transaction)
 	assert.Equal(t, domain.TransactionTypeTransfer, result.Transaction.Type)
 	assert.Equal(t, domain.TransactionStatusCompleted, result.Transaction.Status)
+	assert.Equal(t, "1234567890", result.Transaction.SourceAccountNumber)
 	assert.True(t, result.Transaction.Amount.Equal(decimal.RequireFromString("100.00")))
 	txRepo.AssertExpectations(t)
 	idemRepo.AssertExpectations(t)
@@ -202,6 +206,9 @@ func TestTransfer_DebitFails(t *testing.T) {
 	accountClient.On("GetAccountByNumber", mock.Anything, mock.Anything).Return(&accountpb.GetAccountByNumberResponse{
 		Account: &accountpb.Account{Id: "dest-acc-1"},
 	}, nil)
+	accountClient.On("GetAccount", mock.Anything, mock.Anything).Return(&accountpb.GetAccountResponse{
+		Account: &accountpb.Account{Id: "src-acc-1", AccountNumber: "1234567890"},
+	}, nil)
 	accountClient.On("DebitAccount", mock.Anything, mock.Anything).Return(&accountpb.DebitAccountResponse{
 		Success:      false,
 		ErrorMessage: "insufficient funds",
@@ -225,6 +232,9 @@ func TestTransfer_CreditFails_Rollback(t *testing.T) {
 
 	accountClient.On("GetAccountByNumber", mock.Anything, mock.Anything).Return(&accountpb.GetAccountByNumberResponse{
 		Account: &accountpb.Account{Id: "dest-acc-1"},
+	}, nil)
+	accountClient.On("GetAccount", mock.Anything, mock.Anything).Return(&accountpb.GetAccountResponse{
+		Account: &accountpb.Account{Id: "src-acc-1", AccountNumber: "1234567890"},
 	}, nil)
 	accountClient.On("DebitAccount", mock.Anything, mock.Anything).Return(&accountpb.DebitAccountResponse{
 		Success:    true,

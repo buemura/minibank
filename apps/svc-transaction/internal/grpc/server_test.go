@@ -40,6 +40,9 @@ func TestTransfer_gRPC_Success(t *testing.T) {
 	accountClient.On("GetAccountByNumber", mock.Anything, mock.Anything).Return(&accountpb.GetAccountByNumberResponse{
 		Account: &accountpb.Account{Id: "dest-1", AccountNumber: "9876543210"},
 	}, nil)
+	accountClient.On("GetAccount", mock.Anything, mock.Anything).Return(&accountpb.GetAccountResponse{
+		Account: &accountpb.Account{Id: "src-1", AccountNumber: "1234567890"},
+	}, nil)
 	accountClient.On("DebitAccount", mock.Anything, mock.Anything).Return(&accountpb.DebitAccountResponse{Success: true, NewBalance: "900"}, nil)
 	accountClient.On("CreditAccount", mock.Anything, mock.Anything).Return(&accountpb.CreditAccountResponse{Success: true, NewBalance: "600"}, nil)
 	txRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
