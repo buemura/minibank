@@ -12,7 +12,8 @@ type Config struct {
 	DBPort     string
 	DBUser     string
 	DBPassword string
-	DBName     string
+	DBName       string
+	OTLPEndpoint string
 }
 
 func Load() *Config {
@@ -24,7 +25,8 @@ func Load() *Config {
 		DBPort:     getEnv("DB_PORT", "5433"),
 		DBUser:     getEnv("DB_USER", "postgres"),
 		DBPassword: getEnv("DB_PASSWORD", "postgres"),
-		DBName:     getEnv("DB_NAME", "account_db"),
+		DBName:       getEnv("DB_NAME", "account_db"),
+		OTLPEndpoint: getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317"),
 	}
 }
 

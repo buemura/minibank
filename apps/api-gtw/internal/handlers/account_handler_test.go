@@ -33,10 +33,16 @@ func protoAccount() *accountpb.Account {
 	}
 }
 
-func TestCreateAccount_Success(t *testing.T) {
+func newAccountHandler() (*AccountHandler, *mocks.MockAccountServiceClient, *mocks.MockAuthServiceClient, *mocks.MockCache) {
 	accountClient := new(mocks.MockAccountServiceClient)
 	authClient := new(mocks.MockAuthServiceClient)
-	handler := NewAccountHandler(accountClient, authClient)
+	mockCache := new(mocks.MockCache)
+	handler := NewAccountHandler(accountClient, authClient, mockCache)
+	return handler, accountClient, authClient, mockCache
+}
+
+func TestCreateAccount_Success(t *testing.T) {
+	handler, accountClient, _, _ := newAccountHandler()
 
 	accountClient.On("CreateAccount", mock.Anything, mock.Anything).Return(&accountpb.CreateAccountResponse{
 		Account: protoAccount(),
@@ -62,9 +68,7 @@ func TestCreateAccount_Success(t *testing.T) {
 }
 
 func TestCreateAccount_DefaultType(t *testing.T) {
-	accountClient := new(mocks.MockAccountServiceClient)
-	authClient := new(mocks.MockAuthServiceClient)
-	handler := NewAccountHandler(accountClient, authClient)
+	handler, accountClient, _, _ := newAccountHandler()
 
 	accountClient.On("CreateAccount", mock.Anything, mock.MatchedBy(func(req *accountpb.CreateAccountRequest) bool {
 		return req.AccountType == "checking"
@@ -85,9 +89,7 @@ func TestCreateAccount_DefaultType(t *testing.T) {
 }
 
 func TestCreateAccount_gRPCError(t *testing.T) {
-	accountClient := new(mocks.MockAccountServiceClient)
-	authClient := new(mocks.MockAuthServiceClient)
-	handler := NewAccountHandler(accountClient, authClient)
+	handler, accountClient, _, _ := newAccountHandler()
 
 	accountClient.On("CreateAccount", mock.Anything, mock.Anything).Return(nil, errors.New("internal error"))
 
@@ -104,9 +106,7 @@ func TestCreateAccount_gRPCError(t *testing.T) {
 }
 
 func TestGetAccounts_Success(t *testing.T) {
-	accountClient := new(mocks.MockAccountServiceClient)
-	authClient := new(mocks.MockAuthServiceClient)
-	handler := NewAccountHandler(accountClient, authClient)
+	handler, accountClient, _, _ := newAccountHandler()
 
 	accountClient.On("GetAccountByUserId", mock.Anything, mock.Anything).Return(&accountpb.GetAccountByUserIdResponse{
 		Accounts: []*accountpb.Account{protoAccount()},
@@ -129,9 +129,7 @@ func TestGetAccounts_Success(t *testing.T) {
 }
 
 func TestGetAccounts_gRPCError(t *testing.T) {
-	accountClient := new(mocks.MockAccountServiceClient)
-	authClient := new(mocks.MockAuthServiceClient)
-	handler := NewAccountHandler(accountClient, authClient)
+	handler, accountClient, _, _ := newAccountHandler()
 
 	accountClient.On("GetAccountByUserId", mock.Anything, mock.Anything).Return(nil, errors.New("error"))
 
@@ -147,10 +145,10 @@ func TestGetAccounts_gRPCError(t *testing.T) {
 }
 
 func TestGetAccount_Success(t *testing.T) {
-	accountClient := new(mocks.MockAccountServiceClient)
-	authClient := new(mocks.MockAuthServiceClient)
-	handler := NewAccountHandler(accountClient, authClient)
+	handler, accountClient, _, mockCache := newAccountHandler()
 
+	mockCache.On("Get", "account:id:acc-1").Return("", nil)
+	mockCache.On("Set", "account:id:acc-1", mock.Anything, accountCacheTTL).Return(nil)
 	accountClient.On("GetAccount", mock.Anything, mock.Anything).Return(&accountpb.GetAccountResponse{
 		Account: protoAccount(),
 	}, nil)
@@ -164,13 +162,33 @@ func TestGetAccount_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	accountClient.AssertExpectations(t)
+	mockCache.AssertExpectations(t)
+}
+
+func TestGetAccount_CacheHit(t *testing.T) {
+	handler, accountClient, _, mockCache := newAccountHandler()
+
+	cachedJSON := `{"account":{"id":"acc-1","balance":"1000.00"}}`
+	mockCache.On("Get", "account:id:acc-1").Return(cachedJSON, nil)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/accounts/acc-1", nil)
+	c.Params = gin.Params{{Key: "id", Value: "acc-1"}}
+
+	handler.GetAccount(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.JSONEq(t, cachedJSON, w.Body.String())
+	// gRPC should NOT be called on cache hit
+	accountClient.AssertNotCalled(t, "GetAccount", mock.Anything, mock.Anything)
+	mockCache.AssertExpectations(t)
 }
 
 func TestGetAccount_NotFound(t *testing.T) {
-	accountClient := new(mocks.MockAccountServiceClient)
-	authClient := new(mocks.MockAuthServiceClient)
-	handler := NewAccountHandler(accountClient, authClient)
+	handler, accountClient, _, mockCache := newAccountHandler()
 
+	mockCache.On("Get", "account:id:acc-1").Return("", nil)
 	accountClient.On("GetAccount", mock.Anything, mock.Anything).Return(nil, errors.New("not found"))
 
 	w := httptest.NewRecorder()
@@ -182,12 +200,11 @@ func TestGetAccount_NotFound(t *testing.T) {
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
 	accountClient.AssertExpectations(t)
+	mockCache.AssertExpectations(t)
 }
 
 func TestGetBalance_Success(t *testing.T) {
-	accountClient := new(mocks.MockAccountServiceClient)
-	authClient := new(mocks.MockAuthServiceClient)
-	handler := NewAccountHandler(accountClient, authClient)
+	handler, accountClient, _, _ := newAccountHandler()
 
 	accountClient.On("GetBalance", mock.Anything, mock.Anything).Return(&accountpb.GetBalanceResponse{
 		Balance:  "1000.00",
@@ -211,9 +228,7 @@ func TestGetBalance_Success(t *testing.T) {
 }
 
 func TestGetBalance_NotFound(t *testing.T) {
-	accountClient := new(mocks.MockAccountServiceClient)
-	authClient := new(mocks.MockAuthServiceClient)
-	handler := NewAccountHandler(accountClient, authClient)
+	handler, accountClient, _, _ := newAccountHandler()
 
 	accountClient.On("GetBalance", mock.Anything, mock.Anything).Return(nil, errors.New("not found"))
 
@@ -229,10 +244,10 @@ func TestGetBalance_NotFound(t *testing.T) {
 }
 
 func TestLookupAccountByNumber_Success(t *testing.T) {
-	accountClient := new(mocks.MockAccountServiceClient)
-	authClient := new(mocks.MockAuthServiceClient)
-	handler := NewAccountHandler(accountClient, authClient)
+	handler, accountClient, authClient, mockCache := newAccountHandler()
 
+	mockCache.On("Get", "account:number:1234567890").Return("", nil)
+	mockCache.On("Set", "account:number:1234567890", mock.Anything, lookupCacheTTL).Return(nil)
 	accountClient.On("GetAccountByNumber", mock.Anything, mock.Anything).Return(&accountpb.GetAccountByNumberResponse{
 		Account: protoAccount(),
 	}, nil)
@@ -255,12 +270,31 @@ func TestLookupAccountByNumber_Success(t *testing.T) {
 	assert.Equal(t, "Test User", resp["owner_name"])
 	accountClient.AssertExpectations(t)
 	authClient.AssertExpectations(t)
+	mockCache.AssertExpectations(t)
+}
+
+func TestLookupAccountByNumber_CacheHit(t *testing.T) {
+	handler, accountClient, authClient, mockCache := newAccountHandler()
+
+	cachedJSON := `{"account_number":"1234567890","agency":"0001","owner_name":"Test User"}`
+	mockCache.On("Get", "account:number:1234567890").Return(cachedJSON, nil)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/accounts/lookup?account_number=1234567890", nil)
+
+	handler.LookupAccountByNumber(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.JSONEq(t, cachedJSON, w.Body.String())
+	// gRPC should NOT be called on cache hit
+	accountClient.AssertNotCalled(t, "GetAccountByNumber", mock.Anything, mock.Anything)
+	authClient.AssertNotCalled(t, "GetUserProfile", mock.Anything, mock.Anything)
+	mockCache.AssertExpectations(t)
 }
 
 func TestLookupAccountByNumber_MissingParam(t *testing.T) {
-	accountClient := new(mocks.MockAccountServiceClient)
-	authClient := new(mocks.MockAuthServiceClient)
-	handler := NewAccountHandler(accountClient, authClient)
+	handler, _, _, _ := newAccountHandler()
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -272,10 +306,9 @@ func TestLookupAccountByNumber_MissingParam(t *testing.T) {
 }
 
 func TestLookupAccountByNumber_NotFound(t *testing.T) {
-	accountClient := new(mocks.MockAccountServiceClient)
-	authClient := new(mocks.MockAuthServiceClient)
-	handler := NewAccountHandler(accountClient, authClient)
+	handler, accountClient, _, mockCache := newAccountHandler()
 
+	mockCache.On("Get", "account:number:0000000000").Return("", nil)
 	accountClient.On("GetAccountByNumber", mock.Anything, mock.Anything).Return(nil, errors.New("not found"))
 
 	w := httptest.NewRecorder()
@@ -286,13 +319,13 @@ func TestLookupAccountByNumber_NotFound(t *testing.T) {
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
 	accountClient.AssertExpectations(t)
+	mockCache.AssertExpectations(t)
 }
 
 func TestLookupAccountByNumber_UserFetchFails(t *testing.T) {
-	accountClient := new(mocks.MockAccountServiceClient)
-	authClient := new(mocks.MockAuthServiceClient)
-	handler := NewAccountHandler(accountClient, authClient)
+	handler, accountClient, authClient, mockCache := newAccountHandler()
 
+	mockCache.On("Get", "account:number:1234567890").Return("", nil)
 	accountClient.On("GetAccountByNumber", mock.Anything, mock.Anything).Return(&accountpb.GetAccountByNumberResponse{
 		Account: protoAccount(),
 	}, nil)
@@ -307,4 +340,5 @@ func TestLookupAccountByNumber_UserFetchFails(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	accountClient.AssertExpectations(t)
 	authClient.AssertExpectations(t)
+	mockCache.AssertExpectations(t)
 }

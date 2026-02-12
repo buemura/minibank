@@ -10,6 +10,8 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -18,6 +20,8 @@ import (
 	"github.com/buemura/minibank/api-gtw/internal/config"
 	"github.com/buemura/minibank/api-gtw/internal/handlers"
 	"github.com/buemura/minibank/api-gtw/internal/middleware"
+	pkgcache "github.com/buemura/minibank/packages/cache"
+	"github.com/buemura/minibank/packages/tracing"
 	accountpb "github.com/buemura/minibank/api-gtw/proto/account/v1"
 	authpb "github.com/buemura/minibank/api-gtw/proto/auth/v1"
 	transactionpb "github.com/buemura/minibank/api-gtw/proto/transaction/v1"
@@ -29,19 +33,38 @@ func main() {
 
 	cfg := config.Load()
 
-	authConn, err := grpc.Dial(cfg.AuthServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	shutdownTracer, err := tracing.Init(context.Background(), "api-gtw", cfg.OTLPEndpoint)
+	if err != nil {
+		logger.Fatal("failed to initialize tracer", zap.Error(err))
+	}
+	defer func() {
+		if err := shutdownTracer(context.Background()); err != nil {
+			logger.Error("failed to shutdown tracer", zap.Error(err))
+		}
+	}()
+
+	authConn, err := grpc.NewClient(cfg.AuthServiceAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	)
 	if err != nil {
 		logger.Fatal("failed to connect to auth service", zap.Error(err))
 	}
 	defer authConn.Close()
 
-	accountConn, err := grpc.Dial(cfg.AccountServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	accountConn, err := grpc.NewClient(cfg.AccountServiceAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	)
 	if err != nil {
 		logger.Fatal("failed to connect to account service", zap.Error(err))
 	}
 	defer accountConn.Close()
 
-	transactionConn, err := grpc.Dial(cfg.TransactionServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	transactionConn, err := grpc.NewClient(cfg.TransactionServiceAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	)
 	if err != nil {
 		logger.Fatal("failed to connect to transaction service", zap.Error(err))
 	}
@@ -51,14 +74,17 @@ func main() {
 	accountClient := accountpb.NewAccountServiceClient(accountConn)
 	transactionClient := transactionpb.NewTransactionServiceClient(transactionConn)
 
+	redisCache := pkgcache.NewRedisCacheRepository(cfg.RedisAddr, "")
+
 	authHandler := handlers.NewAuthHandler(authClient)
-	accountHandler := handlers.NewAccountHandler(accountClient, authClient)
+	accountHandler := handlers.NewAccountHandler(accountClient, authClient, redisCache)
 	transactionHandler := handlers.NewTransactionHandler(transactionClient)
 
-	authMiddleware := middleware.NewAuthMiddleware(authClient)
+	authMiddleware := middleware.NewAuthMiddleware(authClient, redisCache)
 
 	router := gin.Default()
 
+	router.Use(otelgin.Middleware("api-gtw"))
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:5173"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},

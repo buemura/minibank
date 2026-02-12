@@ -1,20 +1,29 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
+	"time"
 
+	"github.com/buemura/minibank/api-gtw/internal/cache"
 	accountpb "github.com/buemura/minibank/api-gtw/proto/account/v1"
 	authpb "github.com/buemura/minibank/api-gtw/proto/auth/v1"
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	accountCacheTTL = 30 * time.Second
+	lookupCacheTTL  = 2 * time.Minute
+)
+
 type AccountHandler struct {
 	accountClient accountpb.AccountServiceClient
 	authClient    authpb.AuthServiceClient
+	cache         cache.Cache
 }
 
-func NewAccountHandler(accountClient accountpb.AccountServiceClient, authClient authpb.AuthServiceClient) *AccountHandler {
-	return &AccountHandler{accountClient: accountClient, authClient: authClient}
+func NewAccountHandler(accountClient accountpb.AccountServiceClient, authClient authpb.AuthServiceClient, cache cache.Cache) *AccountHandler {
+	return &AccountHandler{accountClient: accountClient, authClient: authClient, cache: cache}
 }
 
 type CreateAccountRequest struct {
@@ -72,6 +81,13 @@ func (h *AccountHandler) GetAccounts(c *gin.Context) {
 
 func (h *AccountHandler) GetAccount(c *gin.Context) {
 	accountID := c.Param("id")
+	cacheKey := "account:id:" + accountID
+
+	// Try cache first
+	if cached, err := h.cache.Get(cacheKey); err == nil && cached != "" {
+		c.Data(http.StatusOK, "application/json", []byte(cached))
+		return
+	}
 
 	resp, err := h.accountClient.GetAccount(c.Request.Context(), &accountpb.GetAccountRequest{
 		AccountId: accountID,
@@ -82,9 +98,11 @@ func (h *AccountHandler) GetAccount(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"account": mapProtoAccountToResponse(resp.Account),
-	})
+	result := gin.H{"account": mapProtoAccountToResponse(resp.Account)}
+	jsonBytes, _ := json.Marshal(result)
+	_ = h.cache.Set(cacheKey, string(jsonBytes), accountCacheTTL)
+
+	c.JSON(http.StatusOK, result)
 }
 
 func (h *AccountHandler) GetBalance(c *gin.Context) {
@@ -112,6 +130,14 @@ func (h *AccountHandler) LookupAccountByNumber(c *gin.Context) {
 		return
 	}
 
+	cacheKey := "account:number:" + accountNumber
+
+	// Try cache first
+	if cached, err := h.cache.Get(cacheKey); err == nil && cached != "" {
+		c.Data(http.StatusOK, "application/json", []byte(cached))
+		return
+	}
+
 	accountResp, err := h.accountClient.GetAccountByNumber(c.Request.Context(), &accountpb.GetAccountByNumberRequest{
 		AccountNumber: accountNumber,
 	})
@@ -128,15 +154,19 @@ func (h *AccountHandler) LookupAccountByNumber(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	result := gin.H{
 		"account_number": accountResp.Account.AccountNumber,
 		"agency":         accountResp.Account.Agency,
 		"owner_name":     userResp.User.FullName,
-	})
+	}
+	jsonBytes, _ := json.Marshal(result)
+	_ = h.cache.Set(cacheKey, string(jsonBytes), lookupCacheTTL)
+
+	c.JSON(http.StatusOK, result)
 }
 
-func mapProtoAccountToResponse(account *accountpb.Account) map[string]interface{} {
-	return map[string]interface{}{
+func mapProtoAccountToResponse(account *accountpb.Account) map[string]any {
+	return map[string]any{
 		"id":             account.Id,
 		"user_id":        account.UserId,
 		"account_number": account.AccountNumber,

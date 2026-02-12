@@ -8,11 +8,13 @@ import (
 	"syscall"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 
+	"github.com/buemura/minibank/packages/tracing"
 	"github.com/buemura/minibank/svc-transaction/internal/config"
 	"github.com/buemura/minibank/svc-transaction/internal/database"
 	transactiongrpc "github.com/buemura/minibank/svc-transaction/internal/grpc"
@@ -36,6 +38,16 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	shutdownTracer, err := tracing.Init(ctx, "svc-transaction", cfg.OTLPEndpoint)
+	if err != nil {
+		logger.Fatal("failed to initialize tracer", zap.Error(err))
+	}
+	defer func() {
+		if err := shutdownTracer(context.Background()); err != nil {
+			logger.Error("failed to shutdown tracer", zap.Error(err))
+		}
+	}()
+
 	pool, err := pgxpool.New(ctx, cfg.DatabaseURL())
 	if err != nil {
 		logger.Fatal("failed to connect to database", zap.Error(err))
@@ -47,7 +59,10 @@ func main() {
 	}
 	logger.Info("connected to database")
 
-	accountConn, err := grpc.Dial(cfg.AccountServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	accountConn, err := grpc.NewClient(cfg.AccountServiceAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	)
 	if err != nil {
 		logger.Fatal("failed to connect to account service", zap.Error(err))
 	}
@@ -61,7 +76,9 @@ func main() {
 	transactionService := service.NewTransactionService(transactionRepo, idempotencyRepo, accountClient)
 	transactionServer := transactiongrpc.NewTransactionServer(transactionService)
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+	)
 	pb.RegisterTransactionServiceServer(grpcServer, transactionServer)
 	reflection.Register(grpcServer)
 
