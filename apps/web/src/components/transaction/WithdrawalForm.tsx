@@ -59,8 +59,9 @@ export default function WithdrawalForm() {
         setErrorMessage(result.error_message || 'Withdrawal failed')
       }
     } catch (e: unknown) {
-      const err = e as { response?: { data?: { error_message?: string; error?: string } } }
-      setErrorMessage(err.response?.data?.error_message || err.response?.data?.error || 'Withdrawal failed')
+      const err = e as { response?: { data?: { error_message?: string; error?: string | { message?: string } } } }
+      const apiError = err.response?.data?.error
+      setErrorMessage(err.response?.data?.error_message || (typeof apiError === 'object' ? apiError?.message : apiError) || 'Withdrawal failed')
     }
   }
 

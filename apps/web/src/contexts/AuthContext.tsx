@@ -79,8 +79,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return true
     } catch (e: unknown) {
-      const err = e as { response?: { data?: { error?: string } } }
-      setError(err.response?.data?.error || 'Login failed')
+      const err = e as { response?: { data?: { error?: string | { message?: string } } } }
+      const apiError = err.response?.data?.error
+      setError(typeof apiError === 'object' ? apiError?.message || 'Login failed' : apiError || 'Login failed')
       return false
     } finally {
       setIsLoading(false)
@@ -103,8 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return true
     } catch (e: unknown) {
-      const err = e as { response?: { data?: { error?: string } } }
-      setError(err.response?.data?.error || 'Registration failed')
+      const err = e as { response?: { data?: { error?: string | { message?: string } } } }
+      const apiError = err.response?.data?.error
+      setError(typeof apiError === 'object' ? apiError?.message || 'Registration failed' : apiError || 'Registration failed')
       return false
     } finally {
       setIsLoading(false)

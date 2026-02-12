@@ -75,8 +75,9 @@ export default function TransferForm() {
         setErrorMessage(result.error_message || 'Transfer failed')
       }
     } catch (e: unknown) {
-      const err = e as { response?: { data?: { error_message?: string; error?: string } } }
-      setErrorMessage(err.response?.data?.error_message || err.response?.data?.error || 'Transfer failed')
+      const err = e as { response?: { data?: { error_message?: string; error?: string | { message?: string } } } }
+      const apiError = err.response?.data?.error
+      setErrorMessage(err.response?.data?.error_message || (typeof apiError === 'object' ? apiError?.message : apiError) || 'Transfer failed')
     }
   }
 

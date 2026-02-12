@@ -21,6 +21,7 @@ import (
 	"github.com/buemura/minibank/api-gtw/internal/config"
 	"github.com/buemura/minibank/api-gtw/internal/handlers"
 	"github.com/buemura/minibank/api-gtw/internal/middleware"
+	"github.com/buemura/minibank/api-gtw/internal/ratelimit"
 	pkgcache "github.com/buemura/minibank/packages/cache"
 	"github.com/buemura/minibank/packages/metrics"
 	"github.com/buemura/minibank/packages/tracing"
@@ -87,6 +88,7 @@ func main() {
 	transactionClient := transactionpb.NewTransactionServiceClient(transactionConn)
 
 	redisCache := pkgcache.NewRedisCacheRepository(cfg.RedisAddr, "")
+	rateLimiter := ratelimit.NewRedisRateLimiter(cfg.RedisAddr, "")
 
 	authHandler := handlers.NewAuthHandler(authClient)
 	accountHandler := handlers.NewAccountHandler(accountClient, authClient, redisCache)
@@ -94,6 +96,7 @@ func main() {
 	healthHandler := handlers.NewHealthHandler(authConn, accountConn, transactionConn)
 
 	authMiddleware := middleware.NewAuthMiddleware(authClient, redisCache)
+	rateLimitMW := middleware.NewRateLimitMiddleware(rateLimiter)
 
 	router := gin.Default()
 
@@ -102,7 +105,7 @@ func main() {
 		AllowOrigins:     strings.Split(cfg.AllowedOrigins, ","),
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
+		ExposeHeaders:    []string{"Content-Length", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
@@ -117,6 +120,11 @@ func main() {
 	v1 := router.Group("/api/v1")
 	{
 		auth := v1.Group("/auth")
+		auth.Use(rateLimitMW.RateLimit(middleware.RateLimitConfig{
+			Limit:      cfg.RateLimitAuthLimit,
+			Window:     cfg.RateLimitAuthWindow,
+			RouteGroup: "auth",
+		}))
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
@@ -128,6 +136,11 @@ func main() {
 
 		accounts := v1.Group("/accounts")
 		accounts.Use(authMiddleware.Authenticate())
+		accounts.Use(rateLimitMW.RateLimit(middleware.RateLimitConfig{
+			Limit:      cfg.RateLimitAPILimit,
+			Window:     cfg.RateLimitAPIWindow,
+			RouteGroup: "api",
+		}))
 		{
 			accounts.GET("", accountHandler.GetAccounts)
 			accounts.POST("", accountHandler.CreateAccount)
@@ -143,6 +156,11 @@ func main() {
 
 		transactions := v1.Group("/transactions")
 		transactions.Use(authMiddleware.Authenticate())
+		transactions.Use(rateLimitMW.RateLimit(middleware.RateLimitConfig{
+			Limit:      cfg.RateLimitAPILimit,
+			Window:     cfg.RateLimitAPIWindow,
+			RouteGroup: "api",
+		}))
 		{
 			transactions.GET("/:id", transactionHandler.GetTransaction)
 		}

@@ -12,7 +12,7 @@
 
 ## Medium Effort
 
-- [ ] **Rate limiting** — No API rate limiting on the gateway; could use Redis for distributed rate limiting
+- [x] **Rate limiting** — No API rate limiting on the gateway; could use Redis for distributed rate limiting
 - [ ] **Transaction filtering** — History endpoint accepts `type_filter` in the proto but it's not wired through the gateway
 - [ ] **Scheduled/recurring transfers** — Scheduled payments with a cron-based worker
 - [ ] **2FA (TOTP)** — Two-factor authentication for login and sensitive operations
