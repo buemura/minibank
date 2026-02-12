@@ -13,6 +13,7 @@ type Config struct {
 	TransactionServiceAddr string
 	RedisAddr              string
 	OTLPEndpoint           string
+	AllowedOrigins         string
 }
 
 func Load() *Config {
@@ -25,6 +26,7 @@ func Load() *Config {
 		TransactionServiceAddr: getEnv("TRANSACTION_SERVICE_ADDR", "localhost:50053"),
 		RedisAddr:              getEnv("REDIS_ADDR", "localhost:6379"),
 		OTLPEndpoint:           getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317"),
+		AllowedOrigins:         getEnv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173"),
 	}
 }
 
