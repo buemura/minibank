@@ -83,3 +83,90 @@ services:
     command: postgres -c checkpoint_timeout=600 -c max_wal_size=4096
     networks:
       - minibank
+
+  svc-auth:
+    build:
+      context: .
+      dockerfile: apps/svc-auth/Dockerfile
+    hostname: svc-auth
+    ports:
+      - "50051:50051"
+    environment:
+      - GRPC_PORT=50051
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=svc_auth
+      - JWT_SECRET=your-secret-key-change-in-production
+      - ACCESS_TOKEN_EXPIRY=15
+      - REFRESH_TOKEN_EXPIRY=10080
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      - postgres
+    networks:
+      - minibank
+
+  svc-account:
+    build:
+      context: .
+      dockerfile: apps/svc-account/Dockerfile
+    hostname: svc-account
+    ports:
+      - "50052:50052"
+    environment:
+      - GRPC_PORT=50052
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=svc_account
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      - postgres
+    networks:
+      - minibank
+
+  svc-transaction:
+    build:
+      context: .
+      dockerfile: apps/svc-transaction/Dockerfile
+    hostname: svc-transaction
+    ports:
+      - "50053:50053"
+    environment:
+      - GRPC_PORT=50053
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=svc_transaction
+      - ACCOUNT_SERVICE_ADDR=svc-account:50052
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      - postgres
+      - svc-account
+    networks:
+      - minibank
+
+  api-gtw:
+    build:
+      context: .
+      dockerfile: apps/api-gtw/Dockerfile
+    hostname: api-gtw
+    ports:
+      - "8080:8080"
+    environment:
+      - HTTP_PORT=8080
+      - AUTH_SERVICE_ADDR=svc-auth:50051
+      - ACCOUNT_SERVICE_ADDR=svc-account:50052
+      - TRANSACTION_SERVICE_ADDR=svc-transaction:50053
+      - REDIS_ADDR=redis:6379
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    depends_on:
+      - redis
+      - svc-auth
+      - svc-account
+      - svc-transaction
+    networks:
+      - minibank

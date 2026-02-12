@@ -1,0 +1,56 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "apps/api-gtw/**"
+      - "apps/svc-auth/**"
+      - "apps/svc-account/**"
+      - "apps/svc-transaction/**"
+      - "packages/**"
+      - ".github/workflows/docker-build.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: api-gtw
+            dockerfile: apps/api-gtw/Dockerfile
+          - name: svc-auth
+            dockerfile: apps/svc-auth/Dockerfile
+          - name: svc-account
+            dockerfile: apps/svc-account/Dockerfile
+          - name: svc-transaction
+            dockerfile: apps/svc-transaction/Dockerfile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract short SHA
+        id: sha
+        run: echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.service.dockerfile }}
+          push: true
+          tags: |
+            buemura/minibank-${{ matrix.service.name }}:latest
+            buemura/minibank-${{ matrix.service.name }}:${{ steps.sha.outputs.short }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
